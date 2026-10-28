@@ -40,14 +40,17 @@
 | Feature | Description |
 |---|---|
 | **📊 Smart Dashboard** | Real-time overview of Total Balance, Monthly Incomes, Expenses, Savings Rate, and Recent Transactions. |
-| **💳 Transaction Management** | Add, edit, filter, search, and delete categorized income sources and expense items with custom notes and dates. |
-| **🎯 Category Budgets & Alerts** | Set monthly spending limits per category (Food, Travel, Education, Shopping, Entertainment, etc.) with real-time threshold warnings (e.g. 80%). |
+| **💳 Transaction Management (Milestone 2)** | Full CRUD for categorized expenses & incomes, daily timeline history, and smart search & category filters. |
+| **📉 Percentage-First Spending Display (User Mandate)** | Money spent displayed primarily as **Percentages (%)** to optimize student behavioral discipline and avoid loss aversion bias. |
+| **🎯 Category Budgets & Alerts (Milestone 2)** | Set monthly spending limits per category (Food, Travel, Education, Shopping, Entertainment, Misc) with real-time threshold warnings and overspending alerts. |
+| **⚡ 50/30/20 Smart Budget Generator (Innovation)** | One-click algorithmic student budget generator distributing pocket money into 50% Needs, 30% Wants, 20% Growth. |
+| **🚀 Spending Velocity & Burn Meter (Innovation)** | Speedometer calculating calendar days elapsed vs % allowance consumed to prevent running dry mid-month. |
 | **🏆 Savings Goals** | Define target amounts and deadlines, track visual progress bars, and make quick deposits toward your financial goals. |
 | **📈 Visual Analytics** | Visual breakdowns of income streams, spending distributions, category-by-category charts, and net savings trends. |
 | **📑 Comprehensive Reports** | Generate monthly financial summaries and export data seamlessly to **CSV**, **Excel (.xlsx)**, and printable **PDF / HTML**. |
 | **🔔 In-App Notifications** | Automatic alert system notifying users of budget threshold breaches, overspending, savings reminders, and goal milestones. |
 | **🔒 Secure Authentication** | JSON Web Token (JWT) authentication with refresh tokens, password hashing, and Role-Based Access Control (**Student**, **Premium**, **Admin**). |
-| **🎨 Modern Glassmorphic UI** | Premium responsive interface crafted with CSS glassmorphism, fluid animations, dark theme, and mobile-friendly layouts. |
+| **🎨 Modern Glassmorphic UI with Hover Effects** | Premium responsive interface crafted with CSS glassmorphism, 3D card tilt/elevation on hover, glowing borders, and animated progress shimmers. |
 
 ---
 

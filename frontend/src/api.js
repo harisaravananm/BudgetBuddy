@@ -76,6 +76,11 @@ export const financeApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  updateIncome: (id, data) =>
+    apiRequest(`/api/finance/incomes/${id}/`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
   deleteIncome: (id) =>
     apiRequest(`/api/finance/incomes/${id}/`, { method: "DELETE" }),
 
@@ -85,6 +90,11 @@ export const financeApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  updateExpense: (id, data) =>
+    apiRequest(`/api/finance/expenses/${id}/`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
   deleteExpense: (id) =>
     apiRequest(`/api/finance/expenses/${id}/`, { method: "DELETE" }),
 
@@ -92,6 +102,11 @@ export const financeApi = {
   createBudget: (data) =>
     apiRequest("/api/finance/budgets/", {
       method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateBudget: (id, data) =>
+    apiRequest(`/api/finance/budgets/${id}/`, {
+      method: "PATCH",
       body: JSON.stringify(data),
     }),
   deleteBudget: (id) =>

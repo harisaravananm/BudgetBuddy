@@ -231,8 +231,24 @@ export default function App() {
 
   // Modals state
   const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [activeGoalToDeposit, setActiveGoalToDeposit] = useState(null);
+
+  function handleOpenAddTransaction() {
+    setEditingTransaction(null);
+    setShowTransactionModal(true);
+  }
+
+  function handleOpenEditTransaction(item) {
+    setEditingTransaction(item);
+    setShowTransactionModal(true);
+  }
+
+  function handleCloseTransactionModal() {
+    setEditingTransaction(null);
+    setShowTransactionModal(false);
+  }
 
   useEffect(() => {
     const token = localStorage.getItem("budgetbuddy_access");
@@ -384,8 +400,8 @@ export default function App() {
             </button>
 
             <button
-              className="btn btn-primary"
-              onClick={() => setShowTransactionModal(true)}
+              className="btn btn-primary btn-interactive"
+              onClick={handleOpenAddTransaction}
             >
               + Record Transaction
             </button>
@@ -394,35 +410,52 @@ export default function App() {
 
         {/* CONTENT BODY */}
         <main className="content-body">
-          {activeTab === "dashboard" && (
-            <DashboardTab
-              analytics={analytics}
-              goals={goals}
-              recentExpenses={expenses}
-              recentIncomes={incomes}
-              onOpenDeposit={(g) => {
-                setActiveGoalToDeposit(g);
-                setActiveTab("goals");
-              }}
-              onOpenAddTransaction={() => setShowTransactionModal(true)}
-            />
-          )}
+          {(() => {
+            const totalIncomeVal =
+              analytics?.summary?.total_income ||
+              incomes.reduce((acc, i) => acc + parseFloat(i.amount || 0), 0);
+            const overallBudget = budgets.find((b) => !b.category);
+            const overallBudgetLimit = overallBudget ? parseFloat(overallBudget.limit_amount) : 0;
 
-          {activeTab === "transactions" && (
-            <TransactionsTab
-              expenses={expenses}
-              incomes={incomes}
-              onRefresh={fetchAllData}
-              onOpenAddModal={() => setShowTransactionModal(true)}
-            />
-          )}
+            return (
+              <>
+                {activeTab === "dashboard" && (
+                  <DashboardTab
+                    analytics={analytics}
+                    goals={goals}
+                    recentExpenses={expenses}
+                    recentIncomes={incomes}
+                    onOpenDeposit={(g) => {
+                      setActiveGoalToDeposit(g);
+                      setActiveTab("goals");
+                    }}
+                    onOpenAddTransaction={handleOpenAddTransaction}
+                    onOpenEditTransaction={handleOpenEditTransaction}
+                  />
+                )}
 
-          {activeTab === "budgets" && (
-            <BudgetsTab
-              budgets={budgets}
-              onRefresh={fetchAllData}
-            />
-          )}
+                {activeTab === "transactions" && (
+                  <TransactionsTab
+                    expenses={expenses}
+                    incomes={incomes}
+                    onRefresh={fetchAllData}
+                    onOpenAddModal={handleOpenAddTransaction}
+                    onOpenEditModal={handleOpenEditTransaction}
+                    totalIncome={totalIncomeVal}
+                    budgetLimit={overallBudgetLimit}
+                  />
+                )}
+
+                {activeTab === "budgets" && (
+                  <BudgetsTab
+                    budgets={budgets}
+                    onRefresh={fetchAllData}
+                    totalIncome={totalIncomeVal}
+                  />
+                )}
+              </>
+            );
+          })()}
 
           {activeTab === "goals" && (
             <GoalsTab
@@ -460,8 +493,18 @@ export default function App() {
       {/* TRANSACTION MODAL */}
       <TransactionModal
         isOpen={showTransactionModal}
-        onClose={() => setShowTransactionModal(false)}
+        onClose={handleCloseTransactionModal}
         onSuccess={fetchAllData}
+        editItem={editingTransaction}
+        totalIncome={
+          analytics?.summary?.total_income ||
+          incomes.reduce((acc, i) => acc + parseFloat(i.amount || 0), 0)
+        }
+        budgetLimit={
+          budgets.find((b) => !b.category)
+            ? parseFloat(budgets.find((b) => !b.category).limit_amount)
+            : 0
+        }
       />
 
       {/* NOTIFICATIONS MODAL */}

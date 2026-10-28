@@ -69,11 +69,11 @@ export default function AnalyticsTab({ analytics, currentMonth, onMonthChange })
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "24px", marginBottom: "28px" }}>
         
         {/* CATEGORY BREAKDOWN */}
-        <div className="panel" style={{ marginBottom: 0 }}>
+        <div className="panel panel-interactive" style={{ marginBottom: 0 }}>
           <div className="panel-header">
             <div>
               <h3>Category-Wise Spending Breakdown</h3>
-              <p>Where student pocket money goes</p>
+              <p>Where student pocket money goes (shown as % of total expenditure)</p>
             </div>
           </div>
 
@@ -81,34 +81,41 @@ export default function AnalyticsTab({ analytics, currentMonth, onMonthChange })
             <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "24px" }}>No expense data for this month.</p>
           ) : (
             <div className="table-responsive">
-              <table className="custom-table">
+              <table className="custom-table table-hover-effect">
                 <thead>
                   <tr>
                     <th>Category</th>
                     <th>Transactions</th>
-                    <th>Share</th>
-                    <th style={{ textAlign: "right" }}>Amount</th>
+                    <th>Distribution</th>
+                    <th style={{ textAlign: "right" }}>Money Spent (% Share)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {categorySpending.map((cat) => (
-                    <tr key={cat.category}>
+                    <tr key={cat.category} className="tr-interactive">
                       <td>
-                        <span className={`badge badge-${cat.category}`}>
+                        <span className={`badge badge-${cat.category} badge-hover-pulse`}>
                           {cat.label}
                         </span>
                       </td>
                       <td>{cat.count} txns</td>
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <div className="bar-track" style={{ width: "80px", height: "6px" }}>
+                          <div className="bar-track bar-track-animated" style={{ width: "90px", height: "8px" }}>
                             <div className="bar-fill" style={{ width: `${cat.percentage}%`, background: "var(--primary)" }} />
                           </div>
                           <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>{cat.percentage}%</span>
                         </div>
                       </td>
-                      <td style={{ textAlign: "right", fontWeight: "700", fontFamily: "var(--font-mono)" }}>
-                        ₹{cat.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      <td style={{ textAlign: "right" }}>
+                        <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-end" }}>
+                          <span className="badge-spent-pct">
+                            {cat.percentage}% of spend
+                          </span>
+                          <span style={{ fontSize: "10px", color: "var(--text-dim)", marginTop: "2px" }}>
+                            ₹{cat.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -119,7 +126,7 @@ export default function AnalyticsTab({ analytics, currentMonth, onMonthChange })
         </div>
 
         {/* INCOME SOURCES BREAKDOWN */}
-        <div className="panel" style={{ marginBottom: 0 }}>
+        <div className="panel panel-interactive" style={{ marginBottom: 0 }}>
           <div className="panel-header">
             <div>
               <h3>Income Sources Distribution</h3>
@@ -131,27 +138,27 @@ export default function AnalyticsTab({ analytics, currentMonth, onMonthChange })
             <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "24px" }}>No income recorded for this period.</p>
           ) : (
             <div className="table-responsive">
-              <table className="custom-table">
+              <table className="custom-table table-hover-effect">
                 <thead>
                   <tr>
                     <th>Source</th>
                     <th>Inflow Events</th>
                     <th>Share</th>
-                    <th style={{ textAlign: "right" }}>Total</th>
+                    <th style={{ textAlign: "right" }}>Total Inflow</th>
                   </tr>
                 </thead>
                 <tbody>
                   {incomeSources.map((src) => (
-                    <tr key={src.source}>
+                    <tr key={src.source} className="tr-interactive">
                       <td>
-                        <span className="badge" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#34d399" }}>
+                        <span className="badge badge-hover-pulse" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#34d399", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
                           {src.label}
                         </span>
                       </td>
                       <td>{src.count} events</td>
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <div className="bar-track" style={{ width: "80px", height: "6px" }}>
+                          <div className="bar-track bar-track-animated" style={{ width: "90px", height: "8px" }}>
                             <div className="bar-fill" style={{ width: `${src.percentage}%`, background: "var(--success)" }} />
                           </div>
                           <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>{src.percentage}%</span>
