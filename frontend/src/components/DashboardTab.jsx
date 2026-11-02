@@ -65,7 +65,7 @@ export default function DashboardTab({
           <div className="stat-card-header">
             <span className="stat-card-label">Monthly Inflows</span>
             <div className="stat-card-icon" style={{ background: "rgba(16, 185, 129, 0.15)", color: "var(--success)" }}>
-              💰
+              +
             </div>
           </div>
           <div className="stat-card-value font-mono" style={{ color: "var(--success)" }}>
@@ -83,7 +83,7 @@ export default function DashboardTab({
               Total Money Spent (% Exhausted)
             </span>
             <div className="stat-card-icon" style={{ background: "rgba(239, 68, 68, 0.15)", color: "var(--danger)" }}>
-              💸
+              -
             </div>
           </div>
           <div className="stat-card-value font-mono" style={{ color: parseFloat(spentPercent) > 85 ? "var(--danger)" : "#f87171" }}>
@@ -103,7 +103,7 @@ export default function DashboardTab({
           <div className="stat-card-header">
             <span className="stat-card-label">Net Savings Reserve</span>
             <div className="stat-card-icon" style={{ background: "rgba(6, 182, 212, 0.15)", color: "var(--info)" }}>
-              🛡️
+              $
             </div>
           </div>
           <div className="stat-card-value font-mono" style={{ color: summary.net_savings >= 0 ? "var(--info)" : "var(--danger)" }}>
@@ -121,7 +121,7 @@ export default function DashboardTab({
           <div className="stat-card-header">
             <span className="stat-card-label">Financial Discipline Score</span>
             <div className="stat-card-icon" style={{ background: "rgba(99, 102, 241, 0.15)", color: "var(--primary)" }}>
-              🎯
+              4
             </div>
           </div>
           <div className="stat-card-value font-mono" style={{ color: getScoreColor(summary.financial_health_score) }}>
@@ -138,8 +138,7 @@ export default function DashboardTab({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "20px" }}>⚡</span>
-              <h4 style={{ fontSize: "15px", color: "white" }}>Innovation: Spending Velocity & Pocket Money Burn Meter</h4>
+              <h4 style={{ fontSize: "15px", color: "var(--text-main)" }}>Spending pace</h4>
               <span className="badge" style={{ background: parseFloat(velocityRatio) > 1.2 ? "rgba(239, 68, 68, 0.2)" : "rgba(16, 185, 129, 0.2)", color: parseFloat(velocityRatio) > 1.2 ? "#f87171" : "#34d399" }}>
                 Velocity: {velocityRatio}x
               </span>
@@ -147,8 +146,8 @@ export default function DashboardTab({
             <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
               Day {currentDay} of {daysInMonth} ({monthDayPercent}% of month elapsed) vs <strong>{spentPercent}% of pocket money consumed</strong>.
               {parseFloat(velocityRatio) > 1.2
-                ? " ⚠️ Caution: Spending faster than calendar days! Slow down to avoid running dry."
-                : " ✅ Great discipline: Spending velocity is within optimal safe pacing."}
+                ? " Spending is running ahead of the month. Keep an eye on the remaining balance."
+                : " Spending is tracking comfortably against the month."}
             </p>
           </div>
           <div style={{ width: "240px" }}>
@@ -285,8 +284,8 @@ export default function DashboardTab({
         <section className="panel panel-interactive" style={{ marginBottom: 0 }}>
           <div className="panel-header">
             <div>
-              <h3>Financial Trajectory (6-Month Trends)</h3>
-              <p>Historical comparison of inflows and outflows</p>
+              <h3>Recent trends</h3>
+              <p>Income and spending over the last six months</p>
             </div>
             <div style={{ display: "flex", gap: "12px", fontSize: "11px", fontWeight: "600" }}>
               <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--success)" }}>
@@ -342,8 +341,8 @@ export default function DashboardTab({
         <section className="panel panel-interactive" style={{ marginBottom: 0 }}>
           <div className="panel-header">
             <div>
-              <h3>Savings Goals (Sinking Funds)</h3>
-              <p>Target milestones for student needs</p>
+              <h3>Savings goals</h3>
+              <p>Keep track of what you are putting money aside for</p>
             </div>
           </div>
 
@@ -369,7 +368,7 @@ export default function DashboardTab({
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                       <div>
                         <strong style={{ fontSize: "14px" }}>{g.name}</strong>
-                        {isComplete && <span className="badge" style={{ marginLeft: "8px", background: "rgba(16, 185, 129, 0.2)", color: "#34d399" }}>Completed 🎯</span>}
+                        {isComplete && <span className="badge" style={{ marginLeft: "8px", background: "var(--success-bg)", color: "var(--success)" }}>Completed</span>}
                       </div>
                       <button
                         className="btn btn-outline btn-sm btn-interactive"
@@ -418,7 +417,7 @@ export default function DashboardTab({
               className={`btn btn-sm ${percentMode ? "btn-primary" : "btn-outline"} btn-interactive`}
               onClick={() => setPercentMode(!percentMode)}
             >
-              {percentMode ? "⚡ Spent As % (Active)" : "₹ Show Currency"}
+              {percentMode ? "Show spending as %" : "Show currency"}
             </button>
             <button className="btn btn-primary btn-sm btn-interactive" onClick={onOpenAddTransaction}>
               + Record New

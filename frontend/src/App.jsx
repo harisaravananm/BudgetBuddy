@@ -174,7 +174,7 @@ function AuthView({ onAuthenticated }) {
         {/* ONE-CLICK DEMO ACCOUNTS */}
         <div className="demo-credentials">
           <div style={{ fontWeight: "700", color: "#a5b4fc", display: "flex", justifyContent: "space-between" }}>
-            <span>⚡ Instant Demo Access</span>
+            <span>Quick demo access</span>
             <span style={{ fontSize: "11px", opacity: 0.8 }}>Pre-seeded with real data</span>
           </div>
           <p style={{ marginTop: "4px", color: "var(--text-muted)", fontSize: "11px" }}>
@@ -186,21 +186,21 @@ function AuthView({ onAuthenticated }) {
               className="btn btn-outline btn-sm"
               onClick={() => handleDemoLogin("student@budgetbuddy.local", "Student123!")}
             >
-              🎓 Student
+              Student
             </button>
             <button
               type="button"
               className="btn btn-outline btn-sm"
               onClick={() => handleDemoLogin("premium@budgetbuddy.local", "Premium123!")}
             >
-              ⭐ Premium
+              Premium
             </button>
             <button
               type="button"
               className="btn btn-outline btn-sm"
               onClick={() => handleDemoLogin("admin@budgetbuddy.local", "Admin123!")}
             >
-              🛡️ Admin
+              Admin
             </button>
           </div>
         </div>
@@ -320,13 +320,13 @@ export default function App() {
   }
 
   const navItems = [
-    { key: "dashboard", label: "Dashboard", icon: "📊" },
-    { key: "transactions", label: "Transactions", icon: "💳" },
-    { key: "budgets", label: "Budget Planner", icon: "🎯" },
-    { key: "goals", label: "Savings Goals", icon: "🏦" },
-    { key: "analytics", label: "Analytics & Trends", icon: "📈" },
-    { key: "reports", label: "Reports & Export", icon: "📄" },
-    { key: "settings", label: profile.role === "admin" ? "Settings & Admin" : "Settings", icon: "⚙️" },
+    { key: "dashboard", label: "Overview" },
+    { key: "transactions", label: "Transactions" },
+    { key: "budgets", label: "Budgets" },
+    { key: "goals", label: "Savings goals" },
+    { key: "analytics", label: "Trends" },
+    { key: "reports", label: "Reports" },
+    { key: "settings", label: profile.role === "admin" ? "Settings & admin" : "Settings" },
   ];
 
   return (
@@ -348,7 +348,6 @@ export default function App() {
               className={`nav-item ${activeTab === item.key ? "active" : ""}`}
               onClick={() => setActiveTab(item.key)}
             >
-              <span>{item.icon}</span>
               <span>{item.label}</span>
               {item.key === "budgets" && budgets.some((b) => b.is_over_budget) && (
                 <span className="nav-badge">Alert</span>
@@ -379,7 +378,6 @@ export default function App() {
         <header className="top-header">
           <div className="header-title">
             <h1>
-              {navItems.find((n) => n.key === activeTab)?.icon}{" "}
               {navItems.find((n) => n.key === activeTab)?.label}
             </h1>
             <p>Pocket money discipline, expense budgeting & savings tracker</p>
@@ -391,7 +389,7 @@ export default function App() {
               style={{ position: "relative" }}
               onClick={() => setShowNotificationsModal(true)}
             >
-              🔔 Alerts
+              Alerts
               {unreadCount > 0 && (
                 <span className="nav-badge" style={{ position: "absolute", top: "-5px", right: "-5px" }}>
                   {unreadCount}
