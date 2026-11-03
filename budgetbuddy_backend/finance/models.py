@@ -8,11 +8,22 @@ POSITIVE = [MinValueValidator(0.01)]
 
 class Category(models.TextChoices):
     FOOD = "food", "Food"
+    TRANSPORT = "transport", "Transport"
+    RENT = "rent", "Rent / Hostel"
+    BOOKS = "books", "Books"
     TRAVEL = "travel", "Travel"
     SHOPPING = "shopping", "Shopping"
     EDUCATION = "education", "Education"
     ENTERTAINMENT = "entertainment", "Entertainment"
+    SUBSCRIPTIONS = "subscriptions", "Subscriptions"
+    HEALTH = "health", "Health"
     MISC = "misc", "Miscellaneous"
+    BILLS = "bills", "Bills & Utilities"
+
+
+class ActiveTransactionManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
 
 
 class Income(models.Model):
@@ -28,10 +39,18 @@ class Income(models.Model):
     date = models.DateField()
     note = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    objects = ActiveTransactionManager()
+    all_objects = models.Manager()
 
     class Meta:
         ordering = ["-date", "-id"]
-        indexes = [models.Index(fields=["user", "date"])]
+        indexes = [
+            models.Index(fields=["user", "date"]),
+            models.Index(fields=["user", "is_deleted", "date"]),
+        ]
 
     def __str__(self):
         return f"{self.source} {self.amount}"
@@ -44,10 +63,19 @@ class Expense(models.Model):
     date = models.DateField()
     note = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    objects = ActiveTransactionManager()
+    all_objects = models.Manager()
 
     class Meta:
         ordering = ["-date", "-id"]
-        indexes = [models.Index(fields=["user", "date"]), models.Index(fields=["user", "category"])]
+        indexes = [
+            models.Index(fields=["user", "date"]),
+            models.Index(fields=["user", "category", "date"]),
+            models.Index(fields=["user", "is_deleted", "date"]),
+        ]
 
     def __str__(self):
         return f"{self.category} {self.amount}"
@@ -61,10 +89,12 @@ class Budget(models.Model):
     limit_amount = models.DecimalField(max_digits=12, decimal_places=2, validators=POSITIVE)
     alert_threshold_percent = models.PositiveSmallIntegerField(default=80)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-month"]
         constraints = [models.UniqueConstraint(fields=["user", "month", "category"], name="uniq_budget")]
+        indexes = [models.Index(fields=["user", "month", "category"])]
 
     def __str__(self):
         return f"{self.month:%Y-%m} {self.category or 'overall'}"
@@ -82,6 +112,7 @@ class SavingsGoal(models.Model):
     deadline = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created_at"]

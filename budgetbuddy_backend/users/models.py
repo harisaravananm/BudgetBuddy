@@ -34,6 +34,8 @@ class User(AbstractUser):
     username = None
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.STUDENT)
+    auth_provider = models.CharField(max_length=20, default="email")
+    avatar_url = models.URLField(max_length=500, blank=True, default="")
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

@@ -1,6 +1,8 @@
+from calendar import monthrange
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from django.db.models import Sum, Count
+from django.db.models import Case, Count, DecimalField, OuterRef, Subquery, Sum, When
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -88,12 +90,23 @@ def check_goal_milestones(user, goal):
         pass
 
 
+def _filter_date_range(queryset, request):
+    for parameter, lookup in (("date_from", "date__gte"), ("date_to", "date__lte")):
+        value = request.query_params.get(parameter)
+        if value:
+            try:
+                queryset = queryset.filter(**{lookup: datetime.strptime(value, "%Y-%m-%d").date()})
+            except ValueError:
+                pass
+    return queryset
+
+
 class IncomeViewSet(viewsets.ModelViewSet):
     serializer_class = IncomeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        qs = Income.objects.filter(user=self.request.user)
+        qs = Income.objects.select_related("user").filter(user=self.request.user)
         source = self.request.query_params.get("source")
         if source:
             qs = qs.filter(source=source)
@@ -107,7 +120,12 @@ class IncomeViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get("search")
         if search:
             qs = qs.filter(note__icontains=search)
+        qs = _filter_date_range(qs, self.request)
         return qs
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save(update_fields=["is_deleted", "updated_at"])
 
 
 class ExpenseViewSet(viewsets.ModelViewSet):
@@ -115,7 +133,7 @@ class ExpenseViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        qs = Expense.objects.filter(user=self.request.user)
+        qs = Expense.objects.select_related("user").filter(user=self.request.user)
         category = self.request.query_params.get("category")
         if category:
             qs = qs.filter(category=category)
@@ -129,6 +147,7 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get("search")
         if search:
             qs = qs.filter(note__icontains=search)
+        qs = _filter_date_range(qs, self.request)
         return qs
 
     def perform_create(self, serializer):
@@ -139,13 +158,39 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         expense = serializer.save()
         notify_budget_alerts(self.request.user, expense.date, expense.category)
 
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save(update_fields=["is_deleted", "updated_at"])
+
 
 class BudgetViewSet(viewsets.ModelViewSet):
     serializer_class = BudgetSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        qs = Budget.objects.filter(user=self.request.user)
+        category_totals = (
+            Expense.objects.filter(user=OuterRef("user"))
+            .annotate(expense_month=TruncMonth("date"))
+            .filter(expense_month=OuterRef("month"), category=OuterRef("category"))
+            .values("expense_month")
+            .annotate(total=Sum("amount"))
+            .values("total")[:1]
+        )
+        overall_totals = (
+            Expense.objects.filter(user=OuterRef("user"))
+            .annotate(expense_month=TruncMonth("date"))
+            .filter(expense_month=OuterRef("month"))
+            .values("expense_month")
+            .annotate(total=Sum("amount"))
+            .values("total")[:1]
+        )
+        qs = Budget.objects.select_related("user").filter(user=self.request.user).annotate(
+            spent_total=Case(
+                When(category="", then=Subquery(overall_totals)),
+                default=Subquery(category_totals),
+                output_field=DecimalField(max_digits=12, decimal_places=2),
+            )
+        )
         month = self.request.query_params.get("month")
         if month:
             try:
@@ -161,7 +206,7 @@ class SavingsGoalViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return SavingsGoal.objects.filter(user=self.request.user)
+        return SavingsGoal.objects.select_related("user").filter(user=self.request.user)
 
     @action(detail=True, methods=["post"])
     def deposit(self, request, pk=None):
@@ -211,6 +256,139 @@ class SavingsGoalViewSet(viewsets.ModelViewSet):
         goal.save()
 
         return Response(self.get_serializer(goal).data)
+
+
+class DashboardSummaryView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        user = request.user
+        today = timezone.localdate()
+        current_start = today.replace(day=1)
+        income_qs = Income.objects.filter(user=user, date__range=(current_start, today))
+        expense_qs = Expense.objects.filter(user=user, date__range=(current_start, today))
+        inflow = income_qs.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        spent = expense_qs.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        net = inflow - spent
+        savings_rate = round(float(net / inflow * 100), 1) if inflow else 0.0
+        has_data = bool(inflow or spent)
+
+        labels = dict(Category.choices)
+        breakdown = []
+        for item in expense_qs.values("category").annotate(total=Sum("amount"), count=Count("id")).order_by("-total"):
+            breakdown.append({
+                "category": item["category"],
+                "label": labels.get(item["category"], item["category"]),
+                "amount": float(item["total"]),
+                "count": item["count"],
+                "percentage": round(float(item["total"] / spent * 100), 1) if spent else 0.0,
+            })
+
+        budget_rows = []
+        budget_spend = {
+            row["category"]: row["total"]
+            for row in expense_qs.values("category").annotate(total=Sum("amount"))
+        }
+        budgets = list(Budget.objects.filter(user=user, month=current_start).order_by("category"))
+        for budget in budgets:
+            spent_for_budget = (
+                sum(budget_spend.values())
+                if not budget.category
+                else budget_spend.get(budget.category, Decimal("0.00"))
+            )
+            budget_rows.append({
+                "category": budget.category or "overall",
+                "limit": float(budget.limit_amount),
+                "spent": float(spent_for_budget),
+                "utilization": round(float(spent_for_budget / budget.limit_amount * 100), 1),
+                "limit_amount": float(budget.limit_amount),
+                "spent_amount": float(spent_for_budget),
+                "percentage_used": round(float(spent_for_budget / budget.limit_amount * 100), 1),
+                "is_over_budget": spent_for_budget > budget.limit_amount,
+            })
+
+        six_month_start = (current_start - timedelta(days=155)).replace(day=1)
+        income_trend = {
+            row["month"]: row["total"]
+            for row in Income.objects.filter(
+                user=user, date__gte=six_month_start, date__lte=today
+            ).annotate(month=TruncMonth("date")).values("month").annotate(total=Sum("amount"))
+        }
+        expense_trend = {
+            row["month"]: row["total"]
+            for row in Expense.objects.filter(
+                user=user, date__gte=six_month_start, date__lte=today
+            ).annotate(month=TruncMonth("date")).values("month").annotate(total=Sum("amount"))
+        }
+        trend = []
+        month = six_month_start
+        for _ in range(6):
+            inc = income_trend.get(month, Decimal("0.00"))
+            exp = expense_trend.get(month, Decimal("0.00"))
+            trend.append({
+                "month": month.strftime("%Y-%m"),
+                "inflow": float(inc),
+                "spent": float(exp),
+                "net_savings": float(inc - exp),
+            })
+            month_number = month.month % 12 + 1
+            year = month.year + (month.month // 12)
+            month = date(year, month_number, 1)
+
+        discipline = None
+        if has_data:
+            budget_score = 100
+            if budget_rows:
+                budget_score = max(0, 100 - sum(max(0, row["utilization"] - 100) for row in budget_rows))
+            days_in_month = monthrange(today.year, today.month)[1]
+            expected_spend_share = today.day / days_in_month
+            actual_spend_share = float(spent / inflow) if inflow else 1.0
+            pace_score = max(0, min(100, 100 - max(
+                0, actual_spend_share - expected_spend_share
+            ) * 100))
+            goal_data = SavingsGoal.objects.filter(user=user).aggregate(
+                saved=Sum("saved_amount"), target=Sum("target_amount")
+            )
+            goal_progress = (
+                min(100, float(goal_data["saved"] / goal_data["target"] * 100))
+                if goal_data["target"] else 0
+            )
+            discipline = round(max(0, min(100, (
+                budget_score * 0.4
+                + max(0, min(100, savings_rate)) * 0.3
+                + pace_score * 0.2
+                + goal_progress * 0.1
+            ))), 1)
+        summary = {
+            "total_income": float(inflow),
+            "total_expense": float(spent),
+            "net_savings": float(net),
+            "savings_rate": savings_rate,
+            "financial_health_score": discipline,
+        }
+        return Response({
+            "inflow": float(inflow),
+            "spent": float(spent),
+            "net_savings": float(net),
+            "savings_rate": savings_rate,
+            "spending_velocity": round(float(spent / max(today.day, 1)), 2),
+            "discipline_score": discipline,
+            "category_breakdown": breakdown,
+            "budget_utilization": budget_rows,
+            "last_6_month_trend": trend,
+            "summary": summary,
+            "category_spending": breakdown,
+            "monthly_trends": [
+                {
+                    "label": row["month"],
+                    "income": row["inflow"],
+                    "expense": row["spent"],
+                    "savings": row["net_savings"],
+                }
+                for row in trend
+            ],
+            "budgets": budget_rows,
+        })
 
 
 class AnalyticsView(APIView):

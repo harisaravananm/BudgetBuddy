@@ -39,7 +39,7 @@ class MeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "email", "role", "profile")
+        fields = ("id", "email", "role", "auth_provider", "avatar_url", "profile")
         read_only_fields = ("id", "email")
 
     def update(self, instance, validated_data):

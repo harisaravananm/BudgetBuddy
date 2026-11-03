@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { authApi, financeApi, notificationsApi } from "./api";
+import { useNavigate } from "react-router-dom";
+import { financeApi, notificationsApi } from "./api";
+import { useAuth } from "./auth/AuthContext";
 import DashboardTab from "./components/DashboardTab";
 import TransactionsTab from "./components/TransactionsTab";
 import BudgetsTab from "./components/BudgetsTab";
@@ -10,26 +12,32 @@ import SettingsTab from "./components/SettingsTab";
 import TransactionModal from "./components/TransactionModal";
 import NotificationsModal from "./components/NotificationsModal";
 
-function AuthView({ onAuthenticated }) {
+export function AuthView() {
+  const { login, register } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "register") {
-        await authApi.register(email, password, fullName);
+        await register(email, password, fullName);
+      } else {
+        await login(email, password);
       }
-      const tokens = await authApi.login(email, password);
-      localStorage.setItem("budgetbuddy_access", tokens.access);
-      localStorage.setItem("budgetbuddy_refresh", tokens.refresh);
-      onAuthenticated();
+      navigate("/", { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -41,10 +49,8 @@ function AuthView({ onAuthenticated }) {
     setError("");
     setBusy(true);
     try {
-      const tokens = await authApi.login(demoEmail, demoPassword);
-      localStorage.setItem("budgetbuddy_access", tokens.access);
-      localStorage.setItem("budgetbuddy_refresh", tokens.refresh);
-      onAuthenticated();
+      await login(demoEmail, demoPassword);
+      navigate("/", { replace: true });
     } catch (err) {
       setError("Demo login error: " + err.message);
     } finally {
@@ -52,22 +58,22 @@ function AuthView({ onAuthenticated }) {
     }
   }
 
-  async function handleOAuthMock(provider) {
+  function handleOAuthLogin(provider) {
     setError("");
-    setBusy(true);
-    try {
-      const randomId = Math.floor(1000 + Math.random() * 9000);
-      const oauthEmail = `student_${randomId}@student.edu`;
-      const oauthName = `College Student ${randomId}`;
-      const res = await authApi.oauthLogin(provider, oauthEmail, oauthName);
-      localStorage.setItem("budgetbuddy_access", res.access);
-      localStorage.setItem("budgetbuddy_refresh", res.refresh);
-      onAuthenticated();
-    } catch (err) {
-      setError("OAuth error: " + err.message);
-    } finally {
-      setBusy(false);
-    }
+    const state = crypto.randomUUID();
+    sessionStorage.setItem("budgetbuddy_oauth_state", state);
+    const callback = `${window.location.origin}/auth/callback/${provider}`;
+    const params = new URLSearchParams({
+      client_id: provider === "google" ? import.meta.env.VITE_GOOGLE_CLIENT_ID : import.meta.env.VITE_GITHUB_CLIENT_ID,
+      redirect_uri: callback,
+      response_type: "code",
+      state,
+      scope: provider === "google" ? "openid email profile" : "read:user user:email",
+    });
+    const endpoint = provider === "google"
+      ? "https://accounts.google.com/o/oauth2/v2/auth"
+      : "https://github.com/login/oauth/authorize";
+    window.location.assign(`${endpoint}?${params.toString()}`);
   }
 
   return (
@@ -119,14 +125,19 @@ function AuthView({ onAuthenticated }) {
 
           <div className="form-group">
             <label>Password</label>
+            <div className="password-field">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               required
               className="form-control"
               placeholder="At least 8 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <button type="button" className="password-toggle" onClick={() => setShowPassword((value) => !value)}>
+              {showPassword ? "Hide" : "Show"}
+            </button>
+            </div>
           </div>
 
           {error && <p style={{ color: "var(--danger)", fontSize: "12px" }}>{error}</p>}
@@ -146,7 +157,6 @@ function AuthView({ onAuthenticated }) {
           </button>
         </div>
 
-        {/* OAUTH SIMULATED BUTTONS */}
         <div style={{ margin: "20px 0 10px 0", borderTop: "1px solid var(--border-subtle)", paddingTop: "16px" }}>
           <div style={{ fontSize: "11px", color: "var(--text-dim)", textTransform: "uppercase", textAlign: "center", marginBottom: "10px" }}>
             Or Continue With OAuth2
@@ -156,7 +166,7 @@ function AuthView({ onAuthenticated }) {
               type="button"
               className="btn btn-outline btn-sm"
               disabled={busy}
-              onClick={() => handleOAuthMock("google")}
+              onClick={() => handleOAuthLogin("google")}
             >
               🌐 Google
             </button>
@@ -164,7 +174,7 @@ function AuthView({ onAuthenticated }) {
               type="button"
               className="btn btn-outline btn-sm"
               disabled={busy}
-              onClick={() => handleOAuthMock("github")}
+              onClick={() => handleOAuthLogin("github")}
             >
               🐙 GitHub
             </button>
@@ -172,7 +182,7 @@ function AuthView({ onAuthenticated }) {
         </div>
 
         {/* ONE-CLICK DEMO ACCOUNTS */}
-        <div className="demo-credentials">
+        {import.meta.env.VITE_DEMO_MODE === "true" && <div className="demo-credentials">
           <div style={{ fontWeight: "700", color: "#a5b4fc", display: "flex", justifyContent: "space-between" }}>
             <span>Quick demo access</span>
             <span style={{ fontSize: "11px", opacity: 0.8 }}>Pre-seeded with real data</span>
@@ -203,16 +213,25 @@ function AuthView({ onAuthenticated }) {
               Admin
             </button>
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   );
 }
 
 export default function App() {
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user: profile, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem("budgetbuddy_theme");
+    return saved || (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("budgetbuddy_theme", theme);
+  }, [theme]);
 
   // Global Financial & Notification States
   const [analytics, setAnalytics] = useState(null);
@@ -251,37 +270,15 @@ export default function App() {
   }
 
   useEffect(() => {
-    const token = localStorage.getItem("budgetbuddy_access");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    fetchProfile();
-  }, []);
-
-  useEffect(() => {
     if (profile) {
       fetchAllData();
     }
   }, [profile, selectedMonth]);
 
-  async function fetchProfile() {
-    try {
-      const data = await authApi.getMe();
-      setProfile(data);
-    } catch {
-      localStorage.removeItem("budgetbuddy_access");
-      localStorage.removeItem("budgetbuddy_refresh");
-      setProfile(null);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function fetchAllData() {
     try {
       const [anData, expData, incData, bgData, glData, ntData] = await Promise.all([
-        financeApi.getAnalytics(selectedMonth).catch(() => null),
+        financeApi.getDashboardSummary().catch(() => null),
         financeApi.getExpenses().catch(() => ({ results: [] })),
         financeApi.getIncomes().catch(() => ({ results: [] })),
         financeApi.getBudgets().catch(() => ({ results: [] })),
@@ -301,24 +298,6 @@ export default function App() {
     }
   }
 
-  function handleLogout() {
-    localStorage.removeItem("budgetbuddy_access");
-    localStorage.removeItem("budgetbuddy_refresh");
-    setProfile(null);
-  }
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>
-        Loading BudgetBuddy workspace...
-      </div>
-    );
-  }
-
-  if (!profile) {
-    return <AuthView onAuthenticated={fetchProfile} />;
-  }
-
   const navItems = [
     { key: "dashboard", label: "Overview" },
     { key: "transactions", label: "Transactions" },
@@ -332,7 +311,8 @@ export default function App() {
   return (
     <div className="app-container">
       {/* SIDEBAR */}
-      <aside className="sidebar">
+      <button className={`sidebar-backdrop ${sidebarOpen ? "is-visible" : ""}`} aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />
+      <aside className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="brand">
           <div className="brand-icon">BB</div>
           <div className="brand-info">
@@ -346,7 +326,7 @@ export default function App() {
             <button
               key={item.key}
               className={`nav-item ${activeTab === item.key ? "active" : ""}`}
-              onClick={() => setActiveTab(item.key)}
+              onClick={() => { setActiveTab(item.key); setSidebarOpen(false); }}
             >
               <span>{item.label}</span>
               {item.key === "budgets" && budgets.some((b) => b.is_over_budget) && (
@@ -358,15 +338,15 @@ export default function App() {
 
         <div className="sidebar-footer">
           <div className="user-badge">
-            <div className="user-avatar">
+            {profile.avatar_url ? <img className="user-avatar" src={profile.avatar_url} alt="" /> : <div className="user-avatar">
               {(profile.profile?.full_name || profile.email).charAt(0).toUpperCase()}
-            </div>
+            </div>}
             <div className="user-meta">
               <div className="name">{profile.profile?.full_name || profile.email}</div>
               <span className={`role role-${profile.role}`}>{profile.role}</span>
             </div>
           </div>
-          <button className="btn btn-outline btn-sm" onClick={handleLogout}>
+          <button className="btn btn-outline btn-sm" onClick={() => logout()}>
             Sign Out ⎋
           </button>
         </div>
@@ -376,6 +356,7 @@ export default function App() {
       <div className="main-wrapper">
         {/* TOPBAR */}
         <header className="top-header">
+          <button className="mobile-menu-btn btn btn-outline" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}>☰</button>
           <div className="header-title">
             <h1>
               {navItems.find((n) => n.key === activeTab)?.label}
@@ -384,6 +365,13 @@ export default function App() {
           </div>
 
           <div className="header-actions">
+            <button
+              className="btn btn-outline theme-toggle"
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? "☀ Light" : "☾ Dark"}
+            </button>
             <button
               className="btn btn-outline"
               style={{ position: "relative" }}
@@ -398,7 +386,7 @@ export default function App() {
             </button>
 
             <button
-              className="btn btn-primary btn-interactive"
+              className="btn btn-primary btn-interactive record-transaction-btn"
               onClick={handleOpenAddTransaction}
             >
               + Record Transaction
@@ -483,6 +471,8 @@ export default function App() {
             <SettingsTab
               profile={profile}
               onProfileSaved={setProfile}
+              theme={theme}
+              onThemeChange={setTheme}
             />
           )}
         </main>

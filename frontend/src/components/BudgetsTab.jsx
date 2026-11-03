@@ -1,5 +1,11 @@
 import React, { useState } from "react";
 import { financeApi } from "../api";
+import { categoryVisuals } from "../categoryVisuals";
+
+const money = new Intl.NumberFormat("en-IN", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -14,18 +20,19 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const displayedBudgets = budgets.filter((budget) => budget.month?.startsWith(month.slice(0, 7)));
 
   // Total allocated & overall
-  const totalAllocated = budgets.reduce((acc, b) => acc + (b.category ? parseFloat(b.limit_amount) : 0), 0);
-  const overallBudget = budgets.find((b) => !b.category);
+  const totalAllocated = displayedBudgets.reduce((acc, b) => acc + (b.category ? parseFloat(b.limit_amount) : 0), 0);
+  const overallBudget = displayedBudgets.find((b) => !b.category);
 
   // Overall percentage of budget spent
   const overallSpentPercent = overallBudget
     ? overallBudget.percentage_used
-    : budgets.length > 0
+    : displayedBudgets.length > 0
     ? (
-        (budgets.reduce((acc, b) => acc + parseFloat(b.spent_amount || 0), 0) /
-          Math.max(1, budgets.reduce((acc, b) => acc + parseFloat(b.limit_amount || 0), 0))) *
+      (displayedBudgets.reduce((acc, b) => acc + parseFloat(b.spent_amount || 0), 0) /
+        Math.max(1, displayedBudgets.reduce((acc, b) => acc + parseFloat(b.limit_amount || 0), 0))) *
         100
       ).toFixed(1)
     : "0.0";
@@ -109,7 +116,7 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
 
       for (const item of allocations) {
         // check if already exists
-        const existing = budgets.find((b) => (b.category || "") === item.category);
+        const existing = displayedBudgets.find((b) => (b.category || "") === item.category);
         if (existing) {
           await financeApi.updateBudget(existing.id, {
             limit_amount: item.limit_amount,
@@ -156,7 +163,7 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
               {parseFloat(overallSpentPercent) > 100 ? "🚨 Overspent!" : `${(100 - Math.min(100, parseFloat(overallSpentPercent))).toFixed(1)}% Headroom`}
             </span>
             <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
-              Ceiling: ₹{overallBudget ? parseFloat(overallBudget.limit_amount).toLocaleString("en-IN") : "Not Set"}
+              Ceiling: ₹{overallBudget ? money.format(Number(overallBudget.limit_amount)) : "Not Set"}
             </span>
           </div>
         </article>
@@ -169,10 +176,10 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
             </div>
           </div>
           <div className="stat-card-value font-mono" style={{ color: "var(--info)" }}>
-            {budgets.filter((b) => b.category).length} Categories
+            {displayedBudgets.filter((b) => b.category).length} Categories
           </div>
           <div className="stat-card-sub">
-            <span>₹{totalAllocated.toLocaleString("en-IN")} allocated across subjects</span>
+            <span>₹{money.format(totalAllocated)} allocated across categories</span>
           </div>
         </article>
 
@@ -183,12 +190,12 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
               ⚠️
             </div>
           </div>
-          <div className="stat-card-value font-mono" style={{ color: budgets.some((b) => b.is_over_budget) ? "var(--danger)" : "var(--success)" }}>
-            {budgets.filter((b) => b.is_alert || b.is_over_budget).length} Alerts
+          <div className="stat-card-value font-mono" style={{ color: displayedBudgets.some((b) => b.is_over_budget) ? "var(--danger)" : "var(--success)" }}>
+            {displayedBudgets.filter((b) => b.is_alert || b.is_over_budget).length} Alerts
           </div>
           <div className="stat-card-sub">
             <span style={{ color: budgets.some((b) => b.is_over_budget) ? "var(--danger)" : "var(--success)" }}>
-              {budgets.filter((b) => b.is_over_budget).length} categories exceeding limit
+              {displayedBudgets.filter((b) => b.is_over_budget).length} categories exceeding limit
             </span>
           </div>
         </article>
@@ -230,7 +237,7 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
           </div>
         </div>
 
-        {budgets.length === 0 ? (
+        {displayedBudgets.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
             <p style={{ fontSize: "36px", marginBottom: "12px" }}>🎯</p>
             <h4 style={{ color: "white", marginBottom: "6px" }}>No Budgets Configured For This Month</h4>
@@ -242,23 +249,17 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
             </button>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: "24px" }}>
-            {budgets.map((b) => {
-              const pct = b.percentage_used;
-              const isOver = b.is_over_budget;
-              const isAlert = b.is_alert;
+          <div className="budgets-card-grid" style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px" }}>
+            {displayedBudgets.map((b) => {
+              const pct = Number(b.percentage_used || 0);
+              const status = b.status || (pct > 100 ? "exceeded" : pct >= Number(b.alert_threshold_percent) ? "warning" : "safe");
+              const isOver = status === "exceeded";
+              const isAlert = status === "warning";
               const barColor = isOver ? "var(--danger)" : isAlert ? "var(--warning)" : "var(--success)";
-              const title = b.category ? b.category.toUpperCase() : "OVERALL MONTHLY SPENDING CEILING";
-              const categoryIcons = {
-                food: "🍔",
-                travel: "✈️",
-                shopping: "🛍️",
-                education: "📚",
-                entertainment: "🎬",
-                misc: "📦",
-                "": "🎯",
-              };
-              const icon = categoryIcons[b.category || ""] || "📌";
+              const visual = categoryVisuals[b.category || ""] || categoryVisuals.misc;
+              const Icon = visual.icon;
+              const title = visual.label;
+              const remaining = Number(b.remaining_amount || 0);
 
               return (
                 <div
@@ -279,9 +280,11 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span style={{ fontSize: "24px" }}>{icon}</span>
+                      <span className="budget-category-icon" style={{ color: visual.color, background: `${visual.color}1a` }}>
+                        <Icon size={22} strokeWidth={2} aria-hidden="true" />
+                      </span>
                       <div>
-                        <h4 style={{ fontSize: "15px", fontWeight: "700", color: "white" }}>{title}</h4>
+                        <h4 style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-main)" }}>{title}</h4>
                         <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
                           Cycle: {b.month.substring(0, 7)} • Alert at {b.alert_threshold_percent}%
                         </span>
@@ -314,16 +317,16 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
                         {pct}% Spent
                       </div>
                       <span style={{ fontSize: "11px", color: isOver ? "#f87171" : isAlert ? "#fbbf24" : "var(--text-muted)" }}>
-                        {isOver ? "🚨 Limit Exceeded (Overspent)" : isAlert ? "⚠️ Warning Threshold Crossed" : "✅ Safe Spending Trajectory"}
+                        {isOver ? `Over Budget by ₹${money.format(Math.abs(remaining))}` : isAlert ? "Approaching Limit" : "Safe Spending Trajectory"}
                       </span>
                     </div>
 
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: "12px", color: "var(--text-dim)" }}>
-                        Limit Ceiling: <strong>₹{parseFloat(b.limit_amount).toLocaleString("en-IN")}</strong>
+                        Limit Ceiling: <strong>₹{money.format(Number(b.limit_amount))}</strong>
                       </div>
                       <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
-                        Remaining: <strong>{(100 - Math.min(100, pct)).toFixed(1)}% buffer</strong>
+                        Remaining: <strong>{remaining >= 0 ? `₹${money.format(remaining)} left` : `₹${money.format(Math.abs(remaining))} over`}</strong>
                       </div>
                     </div>
                   </div>
@@ -337,11 +340,18 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
                         background: barColor,
                       }}
                     />
+                    <span
+                      className="budget-threshold-marker"
+                      style={{ left: `${Math.min(100, Number(b.alert_threshold_percent))}%` }}
+                      title={`Alert threshold: ${b.alert_threshold_percent}%`}
+                    />
                   </div>
 
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-dim)", paddingTop: "4px", borderTop: "1px dashed var(--border-subtle)" }}>
                     <span>Threshold Trigger: {b.alert_threshold_percent}%</span>
-                    <span>Remaining Amount: ₹{parseFloat(b.remaining_amount).toLocaleString("en-IN")}</span>
+                    <span className={remaining < 0 ? "budget-over-amount" : ""}>
+                      {remaining >= 0 ? `₹${money.format(remaining)} left` : `₹${money.format(Math.abs(remaining))} over`}
+                    </span>
                   </div>
                 </div>
               );
@@ -376,13 +386,10 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                     >
-                      <option value="">🎯 Overall Monthly Spending Limit</option>
-                      <option value="food">🍔 Food & Dining</option>
-                      <option value="travel">✈️ Travel & Transit</option>
-                      <option value="shopping">🛍️ Shopping & Supplies</option>
-                      <option value="education">📚 Education & Books</option>
-                      <option value="entertainment">🎬 Entertainment & Leisure</option>
-                      <option value="misc">📦 Miscellaneous Expenses</option>
+                      <option value="">Overall Monthly Spending Limit</option>
+                      {Object.entries(categoryVisuals)
+                        .filter(([key]) => key)
+                        .map(([key, item]) => <option key={key} value={key}>{item.label}</option>)}
                     </select>
                   </div>
                 )}
@@ -486,7 +493,7 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
                   id="smartBaseInput"
                 />
                 <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
-                  Pre-filled from your verified inflows (₹{totalIncome.toLocaleString("en-IN")}). You can customize the base.
+                  Pre-filled from your verified inflows (₹{money.format(totalIncome)}). You can customize the base.
                 </span>
               </div>
 

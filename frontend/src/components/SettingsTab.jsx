@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { authApi } from "../api";
 
-export default function SettingsTab({ profile, onProfileSaved }) {
+export default function SettingsTab({ profile, onProfileSaved, theme, onThemeChange }) {
   const [fullName, setFullName] = useState(profile.profile.full_name || "");
   const [monthlyIncome, setMonthlyIncome] = useState(profile.profile.monthly_income || "0.00");
   const [currency, setCurrency] = useState(profile.profile.currency || "INR");
@@ -77,6 +77,22 @@ export default function SettingsTab({ profile, onProfileSaved }) {
         </p>
       </div>
 
+      <div className="panel settings-theme-panel">
+        <div>
+          <h3>Appearance</h3>
+          <p>Choose a comfortable theme, or follow your device preference.</p>
+        </div>
+        <button
+          type="button"
+          className="theme-switch"
+          aria-pressed={theme === "dark"}
+          onClick={() => onThemeChange(theme === "dark" ? "light" : "dark")}
+        >
+          <span className="theme-switch-track"><span /></span>
+          <span>{theme === "dark" ? "Dark mode" : "Light mode"}</span>
+        </button>
+      </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "24px", marginBottom: "28px" }}>
         {/* PROFILE SETTINGS FORM */}
         <div className="panel" style={{ marginBottom: 0 }}>
@@ -110,7 +126,7 @@ export default function SettingsTab({ profile, onProfileSaved }) {
               />
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div className="settings-finance-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
               <div className="form-group">
                 <label>Monthly Income Setup (₹)</label>
                 <input

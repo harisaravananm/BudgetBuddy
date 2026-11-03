@@ -360,6 +360,13 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 
 # CORS Allowed Origins (Comma separated)
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173
+AUTH_COOKIE_SECURE=False
+
+# OAuth server-side code exchange
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
 
 # Database (Leave DB_NAME empty to use default SQLite)
 DB_NAME=
@@ -368,6 +375,12 @@ DB_PASSWORD=
 DB_HOST=localhost
 DB_PORT=5432
 ```
+
+Authentication uses 15-minute access JWTs and rotating, blacklisted 7-day
+refresh JWTs in an HttpOnly, SameSite=Lax cookie. Configure the Google and
+GitHub OAuth apps with the exact redirect URI used by the client; GitHub
+accounts must expose at least one verified email (the verified primary email
+is preferred).
 
 ### Frontend (`frontend/.env`)
 ```ini

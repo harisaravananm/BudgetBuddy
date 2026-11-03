@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { categoryColor } from "../categoryVisuals";
 
 export default function DashboardTab({
   analytics,
@@ -16,7 +17,7 @@ export default function DashboardTab({
     total_expense: 0,
     net_savings: 0,
     savings_rate: 0,
-    financial_health_score: 50,
+    financial_health_score: null,
   };
 
   const budgets = analytics?.budgets || [];
@@ -50,6 +51,7 @@ export default function DashboardTab({
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const monthDayPercent = Math.min(100, Math.round((currentDay / daysInMonth) * 100));
   const velocityRatio = monthDayPercent > 0 ? (parseFloat(spentPercent) / monthDayPercent).toFixed(2) : "1.00";
+  const hasScore = summary.financial_health_score !== null && summary.financial_health_score !== undefined;
 
   // Find max value for trend chart scaling
   const maxTrend = Math.max(
@@ -124,11 +126,20 @@ export default function DashboardTab({
               4
             </div>
           </div>
-          <div className="stat-card-value font-mono" style={{ color: getScoreColor(summary.financial_health_score) }}>
-            {summary.financial_health_score} <span style={{ fontSize: "14px", color: "var(--text-dim)" }}>/ 100</span>
-          </div>
+          {hasScore ? (
+            <div className="stat-card-value font-mono" style={{ color: getScoreColor(summary.financial_health_score) }}>
+              <span className="score-gauge" style={{ "--score": `${summary.financial_health_score}%`, "--score-color": getScoreColor(summary.financial_health_score) }}>
+                <span>{summary.financial_health_score}</span>
+              </span>
+              <span style={{ fontSize: "14px", color: "var(--text-dim)" }}>/ 100</span>
+            </div>
+          ) : (
+            <div className="score-empty-state">Add data to see your score</div>
+          )}
           <div className="stat-card-sub">
-            <span style={{ fontSize: "11px", fontWeight: "700" }}>{getScoreLabel(summary.financial_health_score)}</span>
+            <span style={{ fontSize: "11px", fontWeight: "700" }}>
+              {hasScore ? getScoreLabel(summary.financial_health_score) : "Your score will appear here"}
+            </span>
           </div>
         </article>
       </section>
@@ -242,15 +253,7 @@ export default function DashboardTab({
           ) : (
             <div className="bar-chart-container">
               {categorySpending.map((cat) => {
-                const colors = {
-                  food: "#fb923c",
-                  travel: "#60a5fa",
-                  shopping: "#f472b6",
-                  education: "#a78bfa",
-                  entertainment: "#facc15",
-                  misc: "#94a3b8",
-                };
-                const col = colors[cat.category] || "#818cf8";
+                const col = categoryColor(cat.category);
                 return (
                   <div key={cat.category} className="bar-row bar-row-hover">
                     <div className="bar-info">
