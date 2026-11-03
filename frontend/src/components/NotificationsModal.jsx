@@ -34,7 +34,7 @@ export default function NotificationsModal({
     setBusy(true);
     try {
       await notificationsApi.triggerTestAlert(
-        "savings_reminder",
+        "system",
         "Student Money Habit 💡",
         "Tip: Follow the 50/30/20 rule: 50% needs, 30% wants, 20% savings. Check your active goals today!"
       );

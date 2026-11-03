@@ -10,7 +10,18 @@ class NotificationViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return Notification.objects.filter(user=self.request.user)
+        queryset = Notification.objects.filter(user=self.request.user)
+        unread = self.request.query_params.get("unread")
+        if unread in ("true", "1"):
+            queryset = queryset.filter(is_read=False)
+        notification_type = self.request.query_params.get("type")
+        if notification_type:
+            queryset = queryset.filter(type=notification_type)
+        return queryset
+
+    @action(detail=False, methods=["get"], url_path="unread-count")
+    def unread_count(self, request):
+        return Response({"count": self.get_queryset().filter(is_read=False).count()})
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -27,7 +38,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
             "unread_count": unread_count,
         })
 
-    @action(detail=True, methods=["post", "patch"])
+    @action(detail=True, methods=["post", "patch"], url_path="read")
     def mark_read(self, request, pk=None):
         notif = self.get_object()
         notif.is_read = True
@@ -41,7 +52,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"])
     def trigger_test_alert(self, request):
-        alert_type = request.data.get("type", Notification.Type.SAVINGS_REMINDER)
+        alert_type = request.data.get("type", Notification.Type.SYSTEM)
         title = request.data.get("title", "BudgetBuddy Tip 💡")
         message = request.data.get(
             "message",

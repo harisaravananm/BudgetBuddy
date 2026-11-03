@@ -52,6 +52,8 @@ class Profile(models.Model):
     currency = models.CharField(max_length=3, default="INR")
     savings_target_percent = models.PositiveSmallIntegerField(default=20)
     notifications_enabled = models.BooleanField(default=True)
+    alert_threshold_percent = models.PositiveSmallIntegerField(default=80)
+    alert_preferences = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

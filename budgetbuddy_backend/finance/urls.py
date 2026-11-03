@@ -2,6 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from .views import (
     AnalyticsView,
+    AnalyticsEndpointView,
     BudgetViewSet,
     DashboardSummaryView,
     ExpenseViewSet,
@@ -19,4 +20,5 @@ urlpatterns = [
     path("", include(router.urls)),
     path("analytics/", AnalyticsView.as_view(), name="finance-analytics"),
     path("dashboard/summary/", DashboardSummaryView.as_view(), name="dashboard-summary"),
+    path("analytics/<str:report>/", AnalyticsEndpointView.as_view(), name="analytics-endpoint"),
 ]

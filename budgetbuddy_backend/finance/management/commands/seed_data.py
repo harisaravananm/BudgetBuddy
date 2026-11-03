@@ -7,7 +7,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from finance.models import Budget, Category, Expense, Income, SavingsGoal
+from finance.models import Budget, Category, Expense, GoalContribution, Income, SavingsGoal
 from notifications.models import Notification
 from users.models import User
 
@@ -142,16 +142,23 @@ class Command(BaseCommand):
                         alert_threshold_percent=threshold,
                     )
 
-            SavingsGoal.objects.create(
+            goal = SavingsGoal.objects.create(
                 user=user, name="Emergency fund", target_amount=Decimal("50000") * multiplier,
-                saved_amount=Decimal("18500") * multiplier, deadline=today.replace(day=1),
+                saved_amount=Decimal("18500") * multiplier, priority="high", icon="shield", deadline=shift_month(current, 2).replace(day=28),
             )
-            SavingsGoal.objects.create(
+            GoalContribution.objects.create(goal=goal, amount=Decimal("10000") * multiplier, date=shift_month(current, -1).replace(day=15), note="Demo contribution")
+            GoalContribution.objects.create(goal=goal, amount=Decimal("8500") * multiplier, date=current.replace(day=min(today.day, 10)), note="Demo contribution")
+            goal = SavingsGoal.objects.create(
                 user=user, name="Technology upgrade", target_amount=Decimal("90000") * multiplier,
-                saved_amount=Decimal("42000") * multiplier, deadline=shift_month(current, 4),
+                saved_amount=Decimal("42000") * multiplier, priority="medium", icon="laptop", deadline=shift_month(current, 4),
             )
+            GoalContribution.objects.create(goal=goal, amount=Decimal("22000") * multiplier, date=shift_month(current, -2).replace(day=12), note="Demo contribution")
+            GoalContribution.objects.create(goal=goal, amount=Decimal("20000") * multiplier, date=current.replace(day=min(today.day, 8)), note="Demo contribution")
+            SavingsGoal.objects.create(user=user, name="Weekend trip", target_amount=Decimal("25000") * multiplier,
+                                       saved_amount=Decimal("25000") * multiplier, priority="low", icon="travel",
+                                       deadline=shift_month(current, 1).replace(day=28), status=SavingsGoal.Status.COMPLETED)
             Notification.objects.create(
-                user=user, type=Notification.Type.SAVINGS_REMINDER,
+                user=user, type=Notification.Type.SYSTEM,
                 title="Keep your savings momentum",
                 message="Your demo account has a partially funded goal to help explore the dashboard.",
             )

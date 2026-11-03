@@ -6,6 +6,7 @@ from .views import (
     ExportPdfHtmlReportView,
     MonthlySummaryReportView,
     ReportViewSet,
+    GenerateReportView,
 )
 
 router = DefaultRouter()
@@ -14,6 +15,7 @@ router.register("history", ReportViewSet, basename="report")
 urlpatterns = [
     path("", include(router.urls)),
     path("summary/", MonthlySummaryReportView.as_view(), name="report-summary"),
+    path("generate/", GenerateReportView.as_view(), name="report-generate"),
     path("export-csv/", ExportCsvReportView.as_view(), name="report-export-csv"),
     path("export-excel/", ExportExcelReportView.as_view(), name="report-export-excel"),
     path("export-pdf/", ExportPdfHtmlReportView.as_view(), name="report-export-pdf"),

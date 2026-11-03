@@ -1,7 +1,7 @@
 from decimal import Decimal
 from django.db.models import Sum
 from rest_framework import serializers
-from .models import Budget, Expense, Income, SavingsGoal
+from .models import Budget, Expense, GoalContribution, Income, SavingsGoal
 
 
 class IncomeSerializer(serializers.ModelSerializer):
@@ -120,7 +120,14 @@ class BudgetSerializer(serializers.ModelSerializer):
 
 
 class SavingsGoalSerializer(serializers.ModelSerializer):
+    current_amount = serializers.DecimalField(source="saved_amount", max_digits=12, decimal_places=2, required=False)
     progress_percent = serializers.ReadOnlyField()
+    progress_pct = serializers.ReadOnlyField(source="progress_percent")
+    remaining = serializers.SerializerMethodField()
+    days_left = serializers.SerializerMethodField()
+    required_monthly_saving = serializers.SerializerMethodField()
+    on_track = serializers.SerializerMethodField()
+    saved_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = SavingsGoal
@@ -128,10 +135,18 @@ class SavingsGoalSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "target_amount",
+            "current_amount",
             "saved_amount",
             "deadline",
+            "priority",
+            "icon",
             "status",
             "progress_percent",
+            "progress_pct",
+            "remaining",
+            "days_left",
+            "required_monthly_saving",
+            "on_track",
             "created_at",
             "updated_at",
         )
@@ -140,3 +155,37 @@ class SavingsGoalSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data["user"] = self.context["request"].user
         return super().create(validated_data)
+
+    def get_remaining(self, obj):
+        return f"{max(obj.target_amount - obj.current_amount, Decimal('0')):.2f}"
+
+    def get_saved_amount(self, obj):
+        return f"{obj.current_amount:.2f}"
+
+    def get_days_left(self, obj):
+        if not obj.deadline:
+            return None
+        from django.utils import timezone
+        return max((obj.deadline - timezone.localdate()).days, 0)
+
+    def get_required_monthly_saving(self, obj):
+        days = self.get_days_left(obj)
+        if not days:
+            return "0.00"
+        months = max(1, (days + 29) // 30)
+        return f"{max(obj.target_amount - obj.current_amount, Decimal('0')) / months:.2f}"
+
+    def get_on_track(self, obj):
+        if not obj.deadline or obj.status == SavingsGoal.Status.COMPLETED:
+            return True
+        from django.utils import timezone
+        elapsed = max((timezone.localdate() - obj.created_at.date()).days, 1)
+        total = max((obj.deadline - obj.created_at.date()).days, 1)
+        return float(obj.current_amount / obj.target_amount) >= min(elapsed / total, 1)
+
+
+class GoalContributionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GoalContribution
+        fields = ("id", "amount", "date", "note")
+        read_only_fields = ("id",)

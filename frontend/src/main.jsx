@@ -54,6 +54,7 @@ createRoot(document.getElementById("root")).render(
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback/:provider" element={<OAuthCallback />} />
+          <Route path="/overview" element={<ProtectedRoute><App /></ProtectedRoute>} />
           <Route path="*" element={<ProtectedRoute><App /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>

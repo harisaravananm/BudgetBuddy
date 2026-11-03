@@ -22,10 +22,12 @@ export function AuthView() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
@@ -37,9 +39,17 @@ export function AuthView() {
       } else {
         await login(email, password);
       }
-      navigate("/", { replace: true });
+      navigate("/overview", { replace: true });
     } catch (err) {
-      setError(err.message);
+      const responseErrors = err.response?.data;
+      if (responseErrors && typeof responseErrors === "object") {
+        setFieldErrors(responseErrors);
+        setError(responseErrors.detail || "");
+      } else if (!err.response) {
+        setError("Cannot reach server. Is the backend running?");
+      } else {
+        setError(err.message);
+      }
     } finally {
       setBusy(false);
     }
@@ -50,7 +60,7 @@ export function AuthView() {
     setBusy(true);
     try {
       await login(demoEmail, demoPassword);
-      navigate("/", { replace: true });
+      navigate("/overview", { replace: true });
     } catch (err) {
       setError("Demo login error: " + err.message);
     } finally {
@@ -108,6 +118,7 @@ export function AuthView() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
               />
+              {fieldErrors.full_name?.map((message) => <p key={message} className="field-error">{message}</p>)}
             </div>
           )}
 
@@ -121,6 +132,7 @@ export function AuthView() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+            {fieldErrors.email?.map((message) => <p key={message} className="field-error">{message}</p>)}
           </div>
 
           <div className="form-group">
@@ -138,6 +150,10 @@ export function AuthView() {
               {showPassword ? "Hide" : "Show"}
             </button>
             </div>
+            <p style={{ color: "var(--text-dim)", fontSize: "11px", marginTop: "5px" }}>
+              Use at least 8 characters.
+            </p>
+            {fieldErrors.password?.map((message) => <p key={message} className="field-error">{message}</p>)}
           </div>
 
           {error && <p style={{ color: "var(--danger)", fontSize: "12px" }}>{error}</p>}
@@ -275,6 +291,14 @@ export default function App() {
     }
   }, [profile, selectedMonth]);
 
+  useEffect(() => {
+    if (!profile) return undefined;
+    const timer = window.setInterval(() => {
+      notificationsApi.getUnreadCount().then((data) => setUnreadCount(data.count)).catch(() => {});
+    }, 60000);
+    return () => window.clearInterval(timer);
+  }, [profile]);
+
   async function fetchAllData() {
     try {
       const [anData, expData, incData, bgData, glData, ntData] = await Promise.all([
@@ -377,7 +401,7 @@ export default function App() {
               style={{ position: "relative" }}
               onClick={() => setShowNotificationsModal(true)}
             >
-              Alerts
+              🔔
               {unreadCount > 0 && (
                 <span className="nav-badge" style={{ position: "absolute", top: "-5px", right: "-5px" }}>
                   {unreadCount}

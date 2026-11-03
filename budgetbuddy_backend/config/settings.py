@@ -106,12 +106,17 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
 
-CORS_ALLOWED_ORIGINS = [
-    o for o in os.getenv(
-        "CORS_ALLOWED_ORIGINS",
-        "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173"
-    ).split(",") if o
-]
+CORS_ALLOWED_ORIGINS = sorted(set(
+    origin.strip()
+    for origin in (
+        os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+        + [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]
+    )
+    if origin.strip()
+))
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False
 

@@ -55,7 +55,10 @@ export async function apiRequest(path, options = {}) {
 
 export const authApi = {
   login: (email, password) => apiRequest("/api/auth/login/", { method: "POST", body: { email, password } }),
-  register: (email, password, full_name) => apiRequest("/api/auth/register/", { method: "POST", body: { email, password, full_name } }),
+  register: (email, password, full_name) => apiRequest("/api/auth/register/", {
+    method: "POST",
+    body: { email: email.trim().toLowerCase(), password, full_name: full_name.trim() },
+  }),
   refresh: () => apiRequest("/api/auth/refresh/", { method: "POST" }),
   oauthExchange: (provider, code, redirect_uri) => apiRequest(`/api/auth/${provider}/`, { method: "POST", body: { code, redirect_uri } }),
   getMe: () => apiRequest("/api/auth/me/"),
@@ -84,7 +87,7 @@ export const financeApi = {
   deleteBudget: (id) => apiRequest(`/api/finance/budgets/${id}/`, { method: "DELETE" }),
   getGoals: () => apiRequest("/api/finance/goals/"),
   createGoal: (data) => apiRequest("/api/finance/goals/", { method: "POST", body: data }),
-  depositGoal: (id, amount) => apiRequest(`/api/finance/goals/${id}/deposit/`, { method: "POST", body: { amount } }),
+  depositGoal: (id, amount) => apiRequest(`/api/finance/goals/${id}/contribute/`, { method: "POST", body: { amount, date: new Date().toISOString().slice(0, 10) } }),
   withdrawGoal: (id, amount) => apiRequest(`/api/finance/goals/${id}/withdraw/`, { method: "POST", body: { amount } }),
   deleteGoal: (id) => apiRequest(`/api/finance/goals/${id}/`, { method: "DELETE" }),
   getAnalytics: (month = "") => apiRequest(`/api/finance/analytics/${month ? `?month=${month}` : ""}`),
@@ -92,8 +95,9 @@ export const financeApi = {
 };
 
 export const notificationsApi = {
-  getNotifications: () => apiRequest("/api/notifications/"),
-  markRead: (id) => apiRequest(`/api/notifications/${id}/mark_read/`, { method: "POST" }),
+  getNotifications: (params = "") => apiRequest(`/api/notifications/${params}`),
+  getUnreadCount: () => apiRequest("/api/notifications/unread-count/"),
+  markRead: (id) => apiRequest(`/api/notifications/${id}/read/`, { method: "PATCH" }),
   markAllRead: () => apiRequest("/api/notifications/mark_all_read/", { method: "POST" }),
   deleteNotification: (id) => apiRequest(`/api/notifications/${id}/`, { method: "DELETE" }),
   triggerTestAlert: (type, title, message) => apiRequest("/api/notifications/trigger_test_alert/", { method: "POST", body: { type, title, message } }),
@@ -104,4 +108,6 @@ export const reportsApi = {
   getCsvUrl: (month = "") => `${API_URL}/api/reports/export-csv/${month ? `?month=${month}` : ""}`,
   getExcelUrl: (month = "") => `${API_URL}/api/reports/export-excel/${month ? `?month=${month}` : ""}`,
   getPdfUrl: (month = "") => `${API_URL}/api/reports/export-pdf/${month ? `?month=${month}` : ""}`,
+  generate: (data) => apiRequest("/api/reports/generate/", { method: "POST", body: data }),
+  history: () => apiRequest("/api/reports/history/"),
 };

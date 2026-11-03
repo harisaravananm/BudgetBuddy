@@ -104,22 +104,45 @@ class SavingsGoal(models.Model):
     class Status(models.TextChoices):
         ACTIVE = "active", "Active"
         COMPLETED = "completed", "Completed"
+        PAUSED = "paused", "Paused"
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="goals")
     name = models.CharField(max_length=120)
     target_amount = models.DecimalField(max_digits=12, decimal_places=2, validators=POSITIVE)
     saved_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     deadline = models.DateField(null=True, blank=True)
+    priority = models.CharField(max_length=10, choices=[("low", "Low"), ("medium", "Medium"), ("high", "High")], default="medium")
+    icon = models.CharField(max_length=40, default="target")
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "status"])]
 
     @property
     def progress_percent(self):
-        return min(100, round(float(self.saved_amount) / float(self.target_amount) * 100, 1))
+        return min(100, round(float(self.current_amount) / float(self.target_amount) * 100, 1))
+
+    @property
+    def current_amount(self):
+        return self.saved_amount
+
+    @current_amount.setter
+    def current_amount(self, value):
+        self.saved_amount = value
 
     def __str__(self):
         return self.name
+
+
+class GoalContribution(models.Model):
+    goal = models.ForeignKey(SavingsGoal, on_delete=models.CASCADE, related_name="contributions")
+    amount = models.DecimalField(max_digits=12, decimal_places=2, validators=POSITIVE)
+    date = models.DateField()
+    note = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["-date", "-id"]
+        indexes = [models.Index(fields=["goal", "date"])]

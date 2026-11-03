@@ -20,8 +20,9 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (email, password, fullName) => {
-    await authApi.register(email, password, fullName);
-    await authenticate(email, password);
+    const tokens = await authApi.register(email, password, fullName);
+    setAccessToken(tokens.access);
+    setUser(tokens.user || await authApi.getMe());
   };
 
   const logout = async () => {
