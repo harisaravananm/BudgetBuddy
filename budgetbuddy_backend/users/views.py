@@ -19,6 +19,77 @@ from .serializers import AdminUserSerializer, MeSerializer, RegisterSerializer
 
 REFRESH_COOKIE = "budgetbuddy_refresh"
 
+def seed_new_user_starter_data(user):
+    """Seed starter demo budgets, transactions, and savings goals for new users."""
+    try:
+        from finance.models import Category, Income, Expense, Budget, SavingsGoal
+        from notifications.models import Notification
+        from django.utils import timezone
+        today = timezone.localdate()
+        month = today.replace(day=1)
+
+        Income.objects.create(
+            user=user,
+            source=Income.Source.POCKET_MONEY,
+            amount=25000,
+            date=today,
+            note="Monthly starter allowance",
+        )
+        Budget.objects.create(
+            user=user,
+            month=month,
+            category=Category.FOOD,
+            limit_amount=6000,
+            alert_threshold_percent=80,
+        )
+        Budget.objects.create(
+            user=user,
+            month=month,
+            category=Category.TRANSPORT,
+            limit_amount=2500,
+            alert_threshold_percent=80,
+        )
+        Budget.objects.create(
+            user=user,
+            month=month,
+            category=Category.BOOKS,
+            limit_amount=2000,
+            alert_threshold_percent=80,
+        )
+        Expense.objects.create(
+            user=user,
+            category=Category.FOOD,
+            amount=1450,
+            date=today,
+            note="Campus cafeteria and groceries",
+        )
+        Expense.objects.create(
+            user=user,
+            category=Category.TRANSPORT,
+            amount=420,
+            date=today,
+            note="Monthly metro card refill",
+        )
+        SavingsGoal.objects.create(
+            user=user,
+            name="Emergency Fund",
+            target_amount=15000,
+            saved_amount=5000,
+            priority="high",
+            icon="shield",
+            deadline=today.replace(month=min(12, today.month + 3) if today.month <= 9 else 12),
+        )
+        Notification.objects.create(
+            user=user,
+            type=Notification.Type.SYSTEM,
+            title="Welcome to BudgetBuddy!",
+            message="Your account has been pre-configured with starter budgets and sample goals so you can explore all features.",
+        )
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("Failed to seed new user starter data: %s", exc)
+
+
 
 def _set_refresh_cookie(response, token):
     response.set_cookie(
@@ -58,6 +129,7 @@ class RegisterView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
         user = User.objects.get(pk=response.data["id"])
+        seed_new_user_starter_data(user)
         refresh = RefreshToken.for_user(user)
         response.data = {"access": str(refresh.access_token), "user": MeSerializer(user).data}
         _set_refresh_cookie(response, str(refresh))
@@ -203,6 +275,7 @@ class OAuthExchangeView(APIView):
                 auth_provider=provider,
                 avatar_url=avatar or "",
             )
+            seed_new_user_starter_data(user)
         else:
             user.auth_provider = provider
             if avatar:
