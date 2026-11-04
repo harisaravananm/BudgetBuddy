@@ -56,7 +56,19 @@ TEMPLATES = [{
     ]},
 }]
 
-if os.getenv("DB_NAME"):
+database_url = os.getenv("DATABASE_URL")
+if database_url:
+    import urllib.parse
+    url = urllib.parse.urlparse(database_url)
+    DATABASES = {"default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": url.path.lstrip("/"),
+        "USER": url.username or "",
+        "PASSWORD": url.password or "",
+        "HOST": url.hostname or "localhost",
+        "PORT": url.port or 5432,
+    }}
+elif os.getenv("DB_NAME"):
     DATABASES = {"default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv("DB_NAME"),
@@ -128,3 +140,20 @@ REST_FRAMEWORK.update({
         "auth_oauth": "10/min",
     },
 })
+
+# Email Configuration (SMTP via Gmail or SendGrid, or Console fallback)
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend" if os.getenv("EMAIL_HOST_USER") else "django.core.mail.backends.console.EmailBackend"
+)
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() == "true"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL",
+    f"BudgetBuddy Alert <{os.getenv('EMAIL_HOST_USER', 'noreply@budgetbuddy.local')}>"
+)
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))

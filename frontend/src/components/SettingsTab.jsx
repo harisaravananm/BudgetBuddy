@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { authApi } from "../api";
+import { authApi, notificationsApi } from "../api";
+import { Mail, Send, BellRing } from "lucide-react";
 
 export default function SettingsTab({ profile, onProfileSaved, theme, onThemeChange }) {
   const [fullName, setFullName] = useState(profile.profile.full_name || "");
@@ -7,6 +8,12 @@ export default function SettingsTab({ profile, onProfileSaved, theme, onThemeCha
   const [currency, setCurrency] = useState(profile.profile.currency || "INR");
   const [savingsTarget, setSavingsTarget] = useState(profile.profile.savings_target_percent || 20);
   const [notifsEnabled, setNotifsEnabled] = useState(profile.profile.notifications_enabled ?? true);
+  const [emailNotifsEnabled, setEmailNotifsEnabled] = useState(profile.profile.email_notifications_enabled ?? true);
+  const [alertThreshold, setAlertThreshold] = useState(profile.profile.alert_threshold_percent || 80);
+  const [largeAlertEnabled, setLargeAlertEnabled] = useState(profile.profile.large_expense_alert_enabled ?? true);
+  const [largeThreshold, setLargeThreshold] = useState(profile.profile.large_expense_threshold || 5000);
+  const [testEmailBusy, setTestEmailBusy] = useState(false);
+  const [testEmailStatus, setTestEmailStatus] = useState("");
   const [currentRole, setCurrentRole] = useState(profile.role);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -44,6 +51,10 @@ export default function SettingsTab({ profile, onProfileSaved, theme, onThemeCha
         currency,
         savings_target_percent: parseInt(savingsTarget),
         notifications_enabled: notifsEnabled,
+        email_notifications_enabled: emailNotifsEnabled,
+        alert_threshold_percent: parseInt(alertThreshold),
+        large_expense_alert_enabled: largeAlertEnabled,
+        large_expense_threshold: parseFloat(largeThreshold),
       }, currentRole);
       onProfileSaved(updated);
       setMessage("Profile settings successfully updated!");
@@ -51,6 +62,20 @@ export default function SettingsTab({ profile, onProfileSaved, theme, onThemeCha
       setMessage("Error: " + err.message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  
+  async function handleSendTestEmail() {
+    setTestEmailBusy(true);
+    setTestEmailStatus("");
+    try {
+      const res = await notificationsApi.sendTestEmail(profile.email);
+      setTestEmailStatus(res.message || "Real-time test email dispatched successfully!");
+    } catch (err) {
+      setTestEmailStatus("Failed to send: " + (err.response?.data?.error || err.message));
+    } finally {
+      setTestEmailBusy(false);
     }
   }
 
@@ -169,17 +194,96 @@ export default function SettingsTab({ profile, onProfileSaved, theme, onThemeCha
               </span>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
-              <input
-                type="checkbox"
-                id="notifToggle"
-                checked={notifsEnabled}
-                onChange={(e) => setNotifsEnabled(e.target.checked)}
-                style={{ width: "16px", height: "16px", accentColor: "var(--primary)" }}
-              />
-              <label htmlFor="notifToggle" style={{ fontSize: "13px", cursor: "pointer" }}>
-                Enable automatic budget threshold & overspend alerts
-              </label>
+
+            <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: "16px", marginTop: "8px" }}>
+              <h4 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <Mail size={16} color="var(--primary)" /> Real-Time Email Notifications & Alerts
+              </h4>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <input
+                    type="checkbox"
+                    id="emailNotifToggle"
+                    checked={emailNotifsEnabled}
+                    onChange={(e) => setEmailNotifsEnabled(e.target.checked)}
+                    style={{ width: "16px", height: "16px", accentColor: "var(--primary)" }}
+                  />
+                  <label htmlFor="emailNotifToggle" style={{ fontSize: "13px", cursor: "pointer", fontWeight: 500 }}>
+                    Enable Real-Time Email Notifications (SMTP / Gmail / SendGrid)
+                  </label>
+                </div>
+
+                <div className="form-group" style={{ marginTop: "4px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" }}>
+                    <label>Budget Warning Alert Threshold</label>
+                    <span style={{ fontWeight: 700, color: "var(--primary)" }}>{alertThreshold}% of budget</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="50"
+                    max="100"
+                    step="5"
+                    value={alertThreshold}
+                    onChange={(e) => setAlertThreshold(e.target.value)}
+                    style={{ accentColor: "var(--primary)" }}
+                  />
+                  <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
+                    Sends an alert email when category expenses hit {alertThreshold}% or exceed 100% of the limit.
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <input
+                    type="checkbox"
+                    id="largeAlertToggle"
+                    checked={largeAlertEnabled}
+                    onChange={(e) => setLargeAlertEnabled(e.target.checked)}
+                    style={{ width: "16px", height: "16px", accentColor: "var(--primary)" }}
+                  />
+                  <label htmlFor="largeAlertToggle" style={{ fontSize: "13px", cursor: "pointer" }}>
+                    Alert immediately on large single expenses
+                  </label>
+                </div>
+
+                {largeAlertEnabled && (
+                  <div className="form-group" style={{ marginLeft: "26px" }}>
+                    <label style={{ fontSize: "12px" }}>Large Expense Trigger (₹)</label>
+                    <input
+                      type="number"
+                      min="100"
+                      step="100"
+                      className="form-control"
+                      value={largeThreshold}
+                      onChange={(e) => setLargeThreshold(e.target.value)}
+                      style={{ maxWidth: "200px" }}
+                    />
+                  </div>
+                )}
+
+                <div style={{ marginTop: "10px", padding: "12px", background: "var(--bg-canvas)", borderRadius: "6px", border: "1px solid var(--border-subtle)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                    <div>
+                      <div style={{ fontSize: "12px", fontWeight: 600 }}>Test SMTP Connectivity</div>
+                      <div style={{ fontSize: "11px", color: "var(--text-dim)" }}>Send real-time verification email to {profile.email}</div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={testEmailBusy}
+                      onClick={handleSendTestEmail}
+                      className="btn btn-outline btn-sm"
+                      style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                    >
+                      <Send size={13} /> {testEmailBusy ? "Sending..." : "Send Test Email"}
+                    </button>
+                  </div>
+                  {testEmailStatus && (
+                    <p style={{ fontSize: "11px", marginTop: "8px", color: testEmailStatus.includes("Failed") ? "var(--danger)" : "var(--success)" }}>
+                      {testEmailStatus}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
             {message && (

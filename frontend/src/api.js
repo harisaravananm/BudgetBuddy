@@ -101,6 +101,9 @@ export const notificationsApi = {
   markAllRead: () => apiRequest("/api/notifications/mark_all_read/", { method: "POST" }),
   deleteNotification: (id) => apiRequest(`/api/notifications/${id}/`, { method: "DELETE" }),
   triggerTestAlert: (type, title, message) => apiRequest("/api/notifications/trigger_test_alert/", { method: "POST", body: { type, title, message } }),
+  getSettings: () => apiRequest("/api/notifications/settings/"),
+  updateSettings: (data) => apiRequest("/api/notifications/settings/", { method: "PATCH", body: data }),
+  sendTestEmail: (email = "") => apiRequest("/api/notifications/send-test-email/", { method: "POST", body: { email } }),
 };
 
 export const reportsApi = {

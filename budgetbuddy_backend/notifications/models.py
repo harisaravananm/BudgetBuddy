@@ -10,6 +10,8 @@ class Notification(models.Model):
         GOAL_COMPLETED = "goal_completed", "Goal Completed"
         GOAL_DEADLINE = "goal_deadline", "Goal Deadline"
         REPORT_READY = "report_ready", "Report Ready"
+        LARGE_EXPENSE = "large_expense", "Large Expense"
+        EMAIL_SENT = "email_sent", "Email Sent"
         SYSTEM = "system", "System"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")

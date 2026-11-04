@@ -1,6 +1,9 @@
+from decimal import Decimal
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from .email_service import send_test_email
 from .models import Notification
 from .serializers import NotificationSerializer
 
@@ -49,6 +52,56 @@ class NotificationViewSet(viewsets.ModelViewSet):
     def mark_all_read(self, request):
         updated = Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
         return Response({"message": f"{updated} notifications marked as read."})
+
+    @action(detail=False, methods=["get", "patch"], url_path="settings")
+    def settings_view(self, request):
+        """Retrieve or update real-time email & in-app notification preferences."""
+        profile = request.user.profile
+        if request.method == "PATCH":
+            data = request.data
+
+            def _bool(value):
+                if isinstance(value, bool):
+                    return value
+                return str(value).lower() not in ("false", "0", "no", "off", "")
+
+            if "notifications_enabled" in data:
+                profile.notifications_enabled = _bool(data["notifications_enabled"])
+            if "email_notifications_enabled" in data:
+                profile.email_notifications_enabled = _bool(data["email_notifications_enabled"])
+            if "alert_threshold_percent" in data:
+                profile.alert_threshold_percent = max(1, min(100, int(data["alert_threshold_percent"])))
+            if "large_expense_alert_enabled" in data:
+                profile.large_expense_alert_enabled = _bool(data["large_expense_alert_enabled"])
+            if "large_expense_threshold" in data:
+                profile.large_expense_threshold = Decimal(str(data["large_expense_threshold"]))
+            profile.save()
+
+        return Response({
+            "email": request.user.email,
+            "notifications_enabled": profile.notifications_enabled,
+            "email_notifications_enabled": profile.email_notifications_enabled,
+            "alert_threshold_percent": profile.alert_threshold_percent,
+            "large_expense_alert_enabled": profile.large_expense_alert_enabled,
+            "large_expense_threshold": float(profile.large_expense_threshold),
+        })
+
+    @action(detail=False, methods=["post"], url_path="send-test-email")
+    def trigger_test_email(self, request):
+        """Dispatch a real-time SMTP test email to the user's registered or custom email address."""
+        recipient = request.data.get("email") or request.user.email
+        send_test_email(recipient_email=recipient, user=request.user)
+        # Also log in-app notification
+        Notification.objects.create(
+            user=request.user,
+            type=Notification.Type.EMAIL_SENT,
+            title="Real-Time Test Email Dispatched",
+            message=f"Verification email was sent to {recipient}.",
+        )
+        return Response({
+            "success": True,
+            "message": f"Real-time test email successfully dispatched to {recipient}.",
+        })
 
     @action(detail=False, methods=["post"])
     def trigger_test_alert(self, request):

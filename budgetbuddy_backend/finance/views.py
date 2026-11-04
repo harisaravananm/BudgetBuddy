@@ -10,6 +10,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from notifications.models import Notification
+from notifications.email_service import (
+    send_budget_warning_email,
+    send_budget_exceeded_email,
+    send_large_expense_email,
+)
 from .models import Budget, Category, Expense, GoalContribution, Income, SavingsGoal
 from .serializers import (
     BudgetSerializer,
@@ -19,6 +24,23 @@ from .serializers import (
     GoalContributionSerializer,
 )
 
+
+
+def check_large_expense_alert(user, expense):
+    profile = getattr(user, "profile", None)
+    if not profile or not getattr(profile, "notifications_enabled", True):
+        return
+    threshold = getattr(profile, "large_expense_threshold", Decimal("5000.00"))
+    if expense.amount >= threshold and getattr(profile, "large_expense_alert_enabled", True):
+        cat_display = dict(Category.choices).get(expense.category, "Expense")
+        Notification.objects.create(
+            user=user,
+            type=Notification.Type.LARGE_EXPENSE,
+            title=f"Large Expense Recorded: ₹{expense.amount:.2f}",
+            message=f"A transaction of ₹{expense.amount:.2f} was logged under {cat_display}.",
+            related_object=f"expense:{expense.id}:large",
+        )
+        send_large_expense_email(user, expense)
 
 def notify_budget_alerts(user, expense_date, category):
     if not getattr(user.profile, "notifications_enabled", True):
@@ -41,7 +63,10 @@ def notify_budget_alerts(user, expense_date, category):
             pct = (float(spent) / float(b.limit_amount)) * 100 if b.limit_amount > 0 else 0
             cat_display = dict(Category.choices).get(b.category, "Overall")
 
-            level = "exceeded" if spent >= b.limit_amount else "warning" if pct >= b.alert_threshold_percent else None
+            threshold = getattr(b, "alert_threshold_percent", 80)
+            if hasattr(user, "profile") and user.profile.alert_threshold_percent:
+                threshold = user.profile.alert_threshold_percent
+            level = "exceeded" if spent >= b.limit_amount else "warning" if pct >= threshold else None
             if level:
                 key = f"budget:{b.id}:{month_start.isoformat()}:{level}"
                 if not Notification.objects.filter(user=user, related_object=key).exists():
@@ -52,6 +77,10 @@ def notify_budget_alerts(user, expense_date, category):
                         message=f"You have spent ₹{spent:.2f} of your {cat_display} budget of ₹{b.limit_amount:.2f}.",
                         related_object=key,
                     )
+                    if level == "exceeded":
+                        send_budget_exceeded_email(user, b, spent, b.limit_amount, pct)
+                    else:
+                        send_budget_warning_email(user, b, spent, b.limit_amount, pct)
 
 
 def check_goal_milestones(user, goal):
@@ -132,10 +161,12 @@ class ExpenseViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         expense = serializer.save(user=self.request.user)
+        check_large_expense_alert(self.request.user, expense)
         notify_budget_alerts(self.request.user, expense.date, expense.category)
 
     def perform_update(self, serializer):
         expense = serializer.save()
+        check_large_expense_alert(self.request.user, expense)
         notify_budget_alerts(self.request.user, expense.date, expense.category)
 
     def perform_destroy(self, instance):

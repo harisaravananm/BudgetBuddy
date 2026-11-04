@@ -41,6 +41,9 @@ class ProfileSerializer(serializers.ModelSerializer):
             "savings_target_percent",
             "notifications_enabled",
             "alert_threshold_percent",
+            "email_notifications_enabled",
+            "large_expense_alert_enabled",
+            "large_expense_threshold",
             "alert_preferences",
         )
 
