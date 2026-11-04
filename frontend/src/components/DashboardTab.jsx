@@ -1,4 +1,17 @@
 import React, { useState } from "react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  Wallet,
+  ShieldCheck,
+  TrendingDown,
+  Calendar,
+  SlidersHorizontal,
+  Plus,
+  Edit2,
+  AlertCircle,
+  PiggyBank,
+} from "lucide-react";
 import { categoryColor } from "../categoryVisuals";
 
 export default function DashboardTab({
@@ -10,7 +23,7 @@ export default function DashboardTab({
   onOpenAddTransaction,
   onOpenEditTransaction,
 }) {
-  const [percentMode, setPercentMode] = useState(true); // User request: Money spent should be shown as % not in numbers
+  const [percentMode, setPercentMode] = useState(true);
 
   const summary = analytics?.summary || {
     total_income: 0,
@@ -32,20 +45,20 @@ export default function DashboardTab({
   };
 
   const getScoreLabel = (score) => {
-    if (score >= 80) return "🌟 Excellent Discipline";
-    if (score >= 60) return "👍 Stable Financial Health";
-    if (score >= 40) return "⚠️ Needs Budget Attention";
-    return "🚨 High Overspending Risk";
+    if (score >= 80) return "Strong Financial Discipline";
+    if (score >= 60) return "Healthy & Stable";
+    if (score >= 40) return "Requires Budget Attention";
+    return "High Overspending Pace";
   };
 
-  // User requirement: Money spent should be shown as % not in numbers
+  // Money spent shown as % of allowance/income
   const totalIncome = summary.total_income || 0;
   const totalExpense = summary.total_expense || 0;
   const spentPercent = totalIncome > 0
     ? ((totalExpense / totalIncome) * 100).toFixed(1)
     : totalExpense > 0 ? "100.0" : "0.0";
 
-  // Month progress calculation for Velocity Gauge
+  // Month progress calculation for spending velocity
   const now = new Date();
   const currentDay = now.getDate();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -53,7 +66,6 @@ export default function DashboardTab({
   const velocityRatio = monthDayPercent > 0 ? (parseFloat(spentPercent) / monthDayPercent).toFixed(2) : "1.00";
   const hasScore = summary.financial_health_score !== null && summary.financial_health_score !== undefined;
 
-  // Find max value for trend chart scaling
   const maxTrend = Math.max(
     ...monthlyTrends.map((t) => Math.max(t.income, t.expense, 1000)),
     10000
@@ -63,49 +75,48 @@ export default function DashboardTab({
     <div className="tab-container-animate">
       {/* KEY STATS ROW */}
       <section className="stats-grid">
-        <article className="stat-card stat-card-hover-glow">
+        {/* Income Card */}
+        <article className="stat-card">
           <div className="stat-card-header">
             <span className="stat-card-label">Monthly Inflows</span>
-            <div className="stat-card-icon" style={{ background: "rgba(16, 185, 129, 0.15)", color: "var(--success)" }}>
-              +
+            <div className="stat-card-icon" style={{ background: "var(--success-bg)", color: "var(--success)" }}>
+              <ArrowUpRight size={18} />
             </div>
           </div>
           <div className="stat-card-value font-mono" style={{ color: "var(--success)" }}>
             ₹{summary.total_income.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
           </div>
           <div className="stat-card-sub">
-            <span>Pocket money, scholarship & grants</span>
+            <span>Pocket money, stipends & earnings</span>
           </div>
         </article>
 
-        {/* MANDATE: MONEY SPENT SHOWN AS % NOT IN NUMBERS */}
-        <article className="stat-card stat-card-hover-glow" style={{ borderColor: parseFloat(spentPercent) > 80 ? "rgba(239, 68, 68, 0.4)" : "var(--border-subtle)" }}>
+        {/* Money Spent as % Card */}
+        <article className="stat-card" style={{ borderColor: parseFloat(spentPercent) > 80 ? "var(--danger-border)" : "var(--border-subtle)" }}>
           <div className="stat-card-header">
-            <span className="stat-card-label" style={{ color: "#f87171" }}>
-              Total Money Spent (% Exhausted)
+            <span className="stat-card-label" style={{ color: "var(--danger)" }}>
+              Expenses (% of Allowance)
             </span>
-            <div className="stat-card-icon" style={{ background: "rgba(239, 68, 68, 0.15)", color: "var(--danger)" }}>
-              -
+            <div className="stat-card-icon" style={{ background: "var(--danger-bg)", color: "var(--danger)" }}>
+              <TrendingDown size={18} />
             </div>
           </div>
-          <div className="stat-card-value font-mono" style={{ color: parseFloat(spentPercent) > 85 ? "var(--danger)" : "#f87171" }}>
+          <div className="stat-card-value font-mono" style={{ color: "var(--danger)" }}>
             {spentPercent}% Spent
           </div>
           <div className="stat-card-sub">
-            <span className="badge" style={{ background: "rgba(239,68,68,0.15)", color: "#fca5a5" }}>
-              {100 - Math.min(100, parseFloat(spentPercent))}% unspent buffer
-            </span>
-            <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
-              {categorySpending.length} active spending categories
+            <span className="badge" style={{ background: "var(--danger-bg)", color: "var(--danger-text)" }}>
+              {(100 - Math.min(100, parseFloat(spentPercent))).toFixed(1)}% remaining buffer
             </span>
           </div>
         </article>
 
-        <article className="stat-card stat-card-hover-glow">
+        {/* Net Savings Card */}
+        <article className="stat-card">
           <div className="stat-card-header">
             <span className="stat-card-label">Net Savings Reserve</span>
-            <div className="stat-card-icon" style={{ background: "rgba(6, 182, 212, 0.15)", color: "var(--info)" }}>
-              $
+            <div className="stat-card-icon" style={{ background: "var(--info-bg)", color: "var(--info)" }}>
+              <Wallet size={18} />
             </div>
           </div>
           <div className="stat-card-value font-mono" style={{ color: summary.net_savings >= 0 ? "var(--info)" : "var(--danger)" }}>
@@ -119,11 +130,12 @@ export default function DashboardTab({
           </div>
         </article>
 
-        <article className="stat-card stat-card-hover-glow">
+        {/* Financial Discipline Score */}
+        <article className="stat-card">
           <div className="stat-card-header">
-            <span className="stat-card-label">Financial Discipline Score</span>
-            <div className="stat-card-icon" style={{ background: "rgba(99, 102, 241, 0.15)", color: "var(--primary)" }}>
-              4
+            <span className="stat-card-label">Discipline Score</span>
+            <div className="stat-card-icon" style={{ background: "var(--primary-subtle)", color: "var(--primary)" }}>
+              <ShieldCheck size={18} />
             </div>
           </div>
           {hasScore ? (
@@ -131,60 +143,67 @@ export default function DashboardTab({
               <span className="score-gauge" style={{ "--score": `${summary.financial_health_score}%`, "--score-color": getScoreColor(summary.financial_health_score) }}>
                 <span>{summary.financial_health_score}</span>
               </span>
-              <span style={{ fontSize: "14px", color: "var(--text-dim)" }}>/ 100</span>
+              <span style={{ fontSize: "14px", color: "var(--text-dim)", fontWeight: 400 }}>/ 100</span>
             </div>
           ) : (
-            <div className="score-empty-state">Add data to see your score</div>
+            <div className="stat-card-value font-mono" style={{ fontSize: "16px", color: "var(--text-muted)", minHeight: "36px", display: "flex", alignItems: "center" }}>
+              Active
+            </div>
           )}
           <div className="stat-card-sub">
-            <span style={{ fontSize: "11px", fontWeight: "700" }}>
-              {hasScore ? getScoreLabel(summary.financial_health_score) : "Your score will appear here"}
+            <span style={{ fontSize: "11px", fontWeight: "600" }}>
+              {hasScore ? getScoreLabel(summary.financial_health_score) : "Tracks budget discipline"}
             </span>
           </div>
         </article>
       </section>
 
-      {/* INNOVATION: SPENDING VELOCITY & BURN-RATE SPEEDOMETER */}
-      <section className="panel panel-interactive" style={{ padding: "18px 24px", marginBottom: "28px" }}>
+      {/* SPENDING PACE BANNER */}
+      <section className="panel" style={{ padding: "18px 24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <h4 style={{ fontSize: "15px", color: "var(--text-main)" }}>Spending pace</h4>
-              <span className="badge" style={{ background: parseFloat(velocityRatio) > 1.2 ? "rgba(239, 68, 68, 0.2)" : "rgba(16, 185, 129, 0.2)", color: parseFloat(velocityRatio) > 1.2 ? "#f87171" : "#34d399" }}>
-                Velocity: {velocityRatio}x
+              <h4 style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-main)" }}>Monthly Spending Pace</h4>
+              <span className="badge" style={{ background: parseFloat(velocityRatio) > 1.2 ? "var(--danger-bg)" : "var(--success-bg)", color: parseFloat(velocityRatio) > 1.2 ? "var(--danger)" : "var(--success)" }}>
+                Pace: {velocityRatio}x
               </span>
             </div>
             <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
-              Day {currentDay} of {daysInMonth} ({monthDayPercent}% of month elapsed) vs <strong>{spentPercent}% of pocket money consumed</strong>.
+              Day {currentDay} of {daysInMonth} ({monthDayPercent}% of month elapsed) vs <strong>{spentPercent}% of monthly allowance consumed</strong>.
               {parseFloat(velocityRatio) > 1.2
-                ? " Spending is running ahead of the month. Keep an eye on the remaining balance."
-                : " Spending is tracking comfortably against the month."}
+                ? " Spending is currently outpacing calendar days. Consider slowing down to ensure buffer remains."
+                : " Spending is tracking comfortably within expected calendar pace."}
             </p>
           </div>
           <div style={{ width: "240px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", marginBottom: "4px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", marginBottom: "6px" }}>
               <span style={{ color: "var(--text-dim)" }}>Month Elapsed: {monthDayPercent}%</span>
-              <span style={{ color: "#f87171", fontWeight: "700" }}>Spent: {spentPercent}%</span>
+              <span style={{ color: "var(--danger)", fontWeight: "600" }}>Spent: {spentPercent}%</span>
             </div>
-            <div className="bar-track" style={{ height: "8px" }}>
-              <div className="bar-fill" style={{ width: `${Math.min(100, parseFloat(spentPercent))}%`, background: parseFloat(velocityRatio) > 1.2 ? "var(--danger)" : "var(--primary)" }} />
+            <div className="bar-track" style={{ height: "7px" }}>
+              <div
+                className="bar-fill"
+                style={{
+                  width: `${Math.min(100, parseFloat(spentPercent))}%`,
+                  background: parseFloat(velocityRatio) > 1.2 ? "var(--danger)" : "var(--primary)",
+                }}
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* TWO COLUMN GRID: BUDGET UTILIZATION & CATEGORY SPENDING */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "24px", marginBottom: "28px" }}>
-        
-        {/* BUDGET UTILIZATION - SHOWING MONEY SPENT AS % */}
-        <section className="panel panel-interactive" style={{ marginBottom: 0 }}>
+      {/* TWO COLUMN GRID: BUDGET UTILIZATION & CATEGORY BREAKDOWN */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "24px", marginBottom: "24px" }}>
+        {/* Budget Utilization (Showing Spent as %) */}
+        <section className="panel" style={{ marginBottom: 0 }}>
           <div className="panel-header">
             <div>
-              <h3>Budget Utilization Tracking</h3>
-              <p>Spending is evaluated as percentage utilized against guardrails</p>
+              <h3>Budget Utilization</h3>
+              <p>Spending tracked as percentage utilized against monthly limits</p>
             </div>
-            <button className="btn btn-outline btn-sm btn-interactive" onClick={onOpenAddTransaction}>
-              + Add Expense
+            <button className="btn btn-outline btn-sm" onClick={onOpenAddTransaction}>
+              <Plus size={14} /> Add Expense
             </button>
           </div>
 
@@ -199,25 +218,24 @@ export default function DashboardTab({
                 const isOver = b.is_over_budget;
                 const isAlert = b.is_alert;
                 const fillCol = isOver ? "var(--danger)" : isAlert ? "var(--warning)" : "var(--success)";
-                const label = b.category ? b.category.charAt(0).toUpperCase() + b.category.slice(1) : "Overall Monthly Limit";
+                const label = b.category ? b.category.charAt(0).toUpperCase() + b.category.slice(1) : "Overall Monthly Ceiling";
 
                 return (
-                  <div key={b.id} className="bar-row bar-row-hover">
+                  <div key={b.id} className="bar-row">
                     <div className="bar-info">
                       <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <strong>{label}</strong>
-                        {isOver && <span className="badge" style={{ background: "rgba(239, 68, 68, 0.2)", color: "#f87171" }}>Exceeded!</span>}
-                        {!isOver && isAlert && <span className="badge" style={{ background: "rgba(245, 158, 11, 0.2)", color: "#fbbf24" }}>High Alert</span>}
+                        <span style={{ fontWeight: 600 }}>{label}</span>
+                        {isOver && <span className="badge" style={{ background: "var(--danger-bg)", color: "var(--danger)" }}>Over limit</span>}
+                        {!isOver && isAlert && <span className="badge" style={{ background: "var(--warning-bg)", color: "var(--warning)" }}>Warning</span>}
                       </span>
-                      {/* MONEY SPENT SHOWN AS % NOT IN NUMBERS */}
-                      <span className="font-mono" style={{ color: fillCol, fontWeight: "700" }}>
+                      <span className="font-mono" style={{ color: fillCol, fontWeight: "600" }}>
                         {pct}% Spent{" "}
                         <span style={{ color: "var(--text-dim)", fontSize: "11px", fontWeight: "normal" }}>
-                          (of ₹{parseFloat(b.limit_amount).toLocaleString("en-IN")})
+                          (Limit: ₹{parseFloat(b.limit_amount).toLocaleString("en-IN")})
                         </span>
                       </span>
                     </div>
-                    <div className="bar-track bar-track-animated">
+                    <div className="bar-track">
                       <div
                         className="bar-fill"
                         style={{
@@ -237,12 +255,12 @@ export default function DashboardTab({
           )}
         </section>
 
-        {/* CATEGORY SPENDING BREAKDOWN - SHOWING SPENT AS % */}
-        <section className="panel panel-interactive" style={{ marginBottom: 0 }}>
+        {/* Category Breakdown (Showing Spent as %) */}
+        <section className="panel" style={{ marginBottom: 0 }}>
           <div className="panel-header">
             <div>
-              <h3>Category-Wise Spending Breakdown</h3>
-              <p>Percentage share of total student expenditure</p>
+              <h3>Category-Wise Spending</h3>
+              <p>Distribution of expenditures by student category</p>
             </div>
           </div>
 
@@ -255,18 +273,17 @@ export default function DashboardTab({
               {categorySpending.map((cat) => {
                 const col = categoryColor(cat.category);
                 return (
-                  <div key={cat.category} className="bar-row bar-row-hover">
+                  <div key={cat.category} className="bar-row">
                     <div className="bar-info">
                       <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: col }} />
+                        <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: col }} />
                         {cat.label} ({cat.count} txns)
                       </span>
-                      {/* MONEY SPENT SHOWN AS % NOT IN NUMBERS */}
                       <span className="font-mono">
-                        <strong style={{ color: col, fontSize: "14px" }}>{cat.percentage}% of spending</strong>
+                        <strong style={{ color: col, fontSize: "13px" }}>{cat.percentage}% of spending</strong>
                       </span>
                     </div>
-                    <div className="bar-track bar-track-animated">
+                    <div className="bar-track">
                       <div
                         className="bar-fill"
                         style={{ width: `${cat.percentage}%`, background: col }}
@@ -280,15 +297,14 @@ export default function DashboardTab({
         </section>
       </div>
 
-      {/* 6-MONTH TRENDS & SAVINGS GOALS ROW */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "24px", marginBottom: "28px" }}>
-        
-        {/* 6-MONTH TRAJECTORY CHART */}
-        <section className="panel panel-interactive" style={{ marginBottom: 0 }}>
+      {/* 6-MONTH TRENDS & SAVINGS GOALS */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "24px", marginBottom: "24px" }}>
+        {/* Trajectory */}
+        <section className="panel" style={{ marginBottom: 0 }}>
           <div className="panel-header">
             <div>
-              <h3>Recent trends</h3>
-              <p>Income and spending over the last six months</p>
+              <h3>Financial Trends</h3>
+              <p>Inflows vs outflows over the past 6 months</p>
             </div>
             <div style={{ display: "flex", gap: "12px", fontSize: "11px", fontWeight: "600" }}>
               <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--success)" }}>
@@ -301,32 +317,32 @@ export default function DashboardTab({
           </div>
 
           <div className="trend-chart-box">
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "180px", gap: "12px", padding: "10px 0" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "160px", gap: "12px", padding: "10px 0" }}>
               {monthlyTrends.map((item, idx) => {
-                const incHeight = Math.max(8, (item.income / maxTrend) * 150);
-                const expHeight = Math.max(8, (item.expense / maxTrend) * 150);
+                const incHeight = Math.max(8, (item.income / maxTrend) * 130);
+                const expHeight = Math.max(8, (item.expense / maxTrend) * 130);
                 const monthSpentPct = item.income > 0 ? ((item.expense / item.income) * 100).toFixed(0) : "0";
                 return (
                   <div key={idx} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "150px" }}>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: "5px", height: "130px" }}>
                       <div
                         className="trend-bar-interactive"
                         title={`Inflow: ₹${item.income}`}
                         style={{
-                          width: "16px",
+                          width: "14px",
                           height: `${incHeight}px`,
-                          background: "linear-gradient(to top, var(--success), #34d399)",
-                          borderRadius: "4px 4px 0 0",
+                          background: "var(--success)",
+                          borderRadius: "3px 3px 0 0",
                         }}
                       />
                       <div
                         className="trend-bar-interactive"
                         title={`Outflow: ${monthSpentPct}% spent (₹${item.expense})`}
                         style={{
-                          width: "16px",
+                          width: "14px",
                           height: `${expHeight}px`,
-                          background: "linear-gradient(to top, var(--danger), #f43f5e)",
-                          borderRadius: "4px 4px 0 0",
+                          background: "var(--danger)",
+                          borderRadius: "3px 3px 0 0",
                         }}
                       />
                     </div>
@@ -340,12 +356,12 @@ export default function DashboardTab({
           </div>
         </section>
 
-        {/* ACTIVE SAVINGS GOALS */}
-        <section className="panel panel-interactive" style={{ marginBottom: 0 }}>
+        {/* Savings Goals */}
+        <section className="panel" style={{ marginBottom: 0 }}>
           <div className="panel-header">
             <div>
-              <h3>Savings goals</h3>
-              <p>Keep track of what you are putting money aside for</p>
+              <h3>Savings Goals</h3>
+              <p>Milestone progress toward sinking funds</p>
             </div>
           </div>
 
@@ -354,27 +370,18 @@ export default function DashboardTab({
               <p>No active savings goals found.</p>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {goals.slice(0, 3).map((g) => {
                 const isComplete = g.status === "completed" || g.progress_percent >= 100;
                 return (
-                  <div
-                    key={g.id}
-                    className="goal-card-hover"
-                    style={{
-                      background: "rgba(255, 255, 255, 0.03)",
-                      border: "1px solid var(--border-subtle)",
-                      borderRadius: "var(--radius-md)",
-                      padding: "16px",
-                    }}
-                  >
+                  <div key={g.id} className="goal-card-hover">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                       <div>
-                        <strong style={{ fontSize: "14px" }}>{g.name}</strong>
+                        <strong style={{ fontSize: "13.5px", color: "var(--text-main)" }}>{g.name}</strong>
                         {isComplete && <span className="badge" style={{ marginLeft: "8px", background: "var(--success-bg)", color: "var(--success)" }}>Completed</span>}
                       </div>
                       <button
-                        className="btn btn-outline btn-sm btn-interactive"
+                        className="btn btn-outline btn-sm"
                         onClick={() => onOpenDeposit(g)}
                       >
                         + Deposit
@@ -386,18 +393,18 @@ export default function DashboardTab({
                       <span>Target: ₹{parseFloat(g.target_amount).toLocaleString("en-IN")}</span>
                     </div>
 
-                    <div className="bar-track bar-track-animated" style={{ height: "8px" }}>
+                    <div className="bar-track" style={{ height: "6px" }}>
                       <div
                         className="bar-fill"
                         style={{
                           width: `${Math.min(100, g.progress_percent)}%`,
-                          background: isComplete ? "var(--success)" : "linear-gradient(90deg, var(--primary), #06b6d4)",
+                          background: isComplete ? "var(--success)" : "var(--primary)",
                         }}
                       />
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-dim)", marginTop: "4px" }}>
-                      <span style={{ fontWeight: "700", color: "var(--primary)" }}>{g.progress_percent}% achieved</span>
+                      <span style={{ fontWeight: "600", color: "var(--primary)" }}>{g.progress_percent}% achieved</span>
                       {g.deadline && <span>Deadline: {g.deadline}</span>}
                     </div>
                   </div>
@@ -408,28 +415,36 @@ export default function DashboardTab({
         </section>
       </div>
 
-      {/* RECENT TRANSACTIONS TABLE - SHOWING MONEY SPENT AS % */}
-      <section className="panel panel-interactive">
+      {/* RECENT TRANSACTIONS */}
+      <section className="panel">
         <div className="panel-header">
           <div>
-            <h3>Recent Financial Activity</h3>
-            <p>Pocket money inflows and categorized outflows</p>
+            <h3>Recent Transactions</h3>
+            <p>Latest categorized student outflows and pocket money entries</p>
           </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <button
-              className={`btn btn-sm ${percentMode ? "btn-primary" : "btn-outline"} btn-interactive`}
-              onClick={() => setPercentMode(!percentMode)}
-            >
-              {percentMode ? "Show spending as %" : "Show currency"}
-            </button>
-            <button className="btn btn-primary btn-sm btn-interactive" onClick={onOpenAddTransaction}>
-              + Record New
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div className="view-toggle-group">
+              <button
+                className={`view-toggle-btn ${percentMode ? "active" : ""}`}
+                onClick={() => setPercentMode(true)}
+              >
+                % Spent
+              </button>
+              <button
+                className={`view-toggle-btn ${!percentMode ? "active" : ""}`}
+                onClick={() => setPercentMode(false)}
+              >
+                ₹ Currency
+              </button>
+            </div>
+            <button className="btn btn-primary btn-sm" onClick={onOpenAddTransaction}>
+              <Plus size={14} /> Record New
             </button>
           </div>
         </div>
 
         <div className="table-responsive">
-          <table className="custom-table table-hover-effect">
+          <table className="custom-table">
             <thead>
               <tr>
                 <th>Date</th>
@@ -437,7 +452,7 @@ export default function DashboardTab({
                 <th>Category / Source</th>
                 <th>Note</th>
                 <th style={{ textAlign: "right" }}>
-                  {percentMode ? "Money Spent (% Weight)" : "Amount (₹)"}
+                  {percentMode ? "Money Spent (% Share)" : "Amount (₹)"}
                 </th>
                 <th style={{ textAlign: "right" }}>Action</th>
               </tr>
@@ -450,17 +465,15 @@ export default function DashboardTab({
                   ? ((parseFloat(e.amount) / totalExpense) * 100).toFixed(1)
                   : "0.0";
                 return (
-                  <tr key={`exp-${e.id}`} className="tr-interactive">
-                    <td style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }}>{e.date}</td>
-                    <td><span className="badge badge-glow" style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)" }}>Expense</span></td>
+                  <tr key={`exp-${e.id}`}>
+                    <td style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)" }}>{e.date}</td>
+                    <td><span className="badge" style={{ background: "var(--danger-bg)", color: "var(--danger)" }}>Expense</span></td>
                     <td>
-                      <span className={`badge badge-${e.category} badge-hover-pulse`}>
+                      <span className={`badge badge-${e.category}`}>
                         {e.category.toUpperCase()}
                       </span>
                     </td>
-                    <td style={{ color: "var(--text-muted)" }}>{e.note || "—"}</td>
-                    
-                    {/* MONEY SPENT SHOWN AS % NOT IN NUMBERS */}
+                    <td style={{ color: "var(--text-main)" }}>{e.note || "—"}</td>
                     <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                       {percentMode ? (
                         <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-end" }}>
@@ -470,49 +483,48 @@ export default function DashboardTab({
                           >
                             -{expPct}% of inflow
                           </span>
-                          <span style={{ fontSize: "10px", color: "var(--text-dim)", marginTop: "2px" }}>
+                          <span style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: "2px" }}>
                             ₹{parseFloat(e.amount).toLocaleString("en-IN")}
                           </span>
                         </div>
                       ) : (
-                        <span style={{ color: "var(--danger)", fontWeight: "700", fontFamily: "var(--font-mono)" }}>
+                        <span style={{ color: "var(--danger)", fontWeight: "600", fontFamily: "var(--font-mono)" }}>
                           -₹{parseFloat(e.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                         </span>
                       )}
                     </td>
-
                     <td style={{ textAlign: "right" }}>
                       <button
-                        className="btn btn-outline btn-sm btn-interactive"
+                        className="btn btn-outline btn-sm"
                         style={{ padding: "3px 8px", fontSize: "11px" }}
                         onClick={() => onOpenEditTransaction({ ...e, txnType: "expense" })}
                       >
-                        ✏️ Edit
+                        <Edit2 size={12} /> Edit
                       </button>
                     </td>
                   </tr>
                 );
               })}
               {recentIncomes.slice(0, 3).map((i) => (
-                <tr key={`inc-${i.id}`} className="tr-interactive">
-                  <td style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }}>{i.date}</td>
-                  <td><span className="badge badge-glow" style={{ background: "rgba(16,185,129,0.15)", color: "#34d399", border: "1px solid rgba(16,185,129,0.3)" }}>Income</span></td>
+                <tr key={`inc-${i.id}`}>
+                  <td style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)" }}>{i.date}</td>
+                  <td><span className="badge" style={{ background: "var(--success-bg)", color: "var(--success)" }}>Income</span></td>
                   <td>
-                    <span className="badge badge-hover-pulse" style={{ background: "rgba(6,182,212,0.15)", color: "#22d3ee", border: "1px solid rgba(6,182,212,0.3)" }}>
+                    <span className="badge" style={{ background: "var(--info-bg)", color: "var(--info)" }}>
                       {i.source.replace("_", " ").toUpperCase()}
                     </span>
                   </td>
-                  <td style={{ color: "var(--text-muted)" }}>{i.note || "—"}</td>
-                  <td style={{ textAlign: "right", color: "var(--success)", fontWeight: "700", fontFamily: "var(--font-mono)" }}>
+                  <td style={{ color: "var(--text-main)" }}>{i.note || "—"}</td>
+                  <td style={{ textAlign: "right", color: "var(--success)", fontWeight: "600", fontFamily: "var(--font-mono)" }}>
                     +₹{parseFloat(i.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </td>
                   <td style={{ textAlign: "right" }}>
                     <button
-                      className="btn btn-outline btn-sm btn-interactive"
+                      className="btn btn-outline btn-sm"
                       style={{ padding: "3px 8px", fontSize: "11px" }}
                       onClick={() => onOpenEditTransaction({ ...i, txnType: "income" })}
                     >
-                      ✏️ Edit
+                      <Edit2 size={12} /> Edit
                     </button>
                   </td>
                 </tr>

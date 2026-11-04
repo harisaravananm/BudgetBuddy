@@ -1,5 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Receipt,
+  Target,
+  PiggyBank,
+  TrendingUp,
+  FileText,
+  Settings,
+  Sun,
+  Moon,
+  Bell,
+  Menu,
+  Plus,
+} from "lucide-react";
 import { financeApi, notificationsApi } from "./api";
 import { useAuth } from "./auth/AuthContext";
 import DashboardTab from "./components/DashboardTab";
@@ -323,13 +337,13 @@ export default function App() {
   }
 
   const navItems = [
-    { key: "dashboard", label: "Overview" },
-    { key: "transactions", label: "Transactions" },
-    { key: "budgets", label: "Budgets" },
-    { key: "goals", label: "Savings goals" },
-    { key: "analytics", label: "Trends" },
-    { key: "reports", label: "Reports" },
-    { key: "settings", label: profile.role === "admin" ? "Settings & admin" : "Settings" },
+    { key: "dashboard", label: "Overview", icon: LayoutDashboard },
+    { key: "transactions", label: "Transactions", icon: Receipt },
+    { key: "budgets", label: "Budgets", icon: Target },
+    { key: "goals", label: "Savings Goals", icon: PiggyBank },
+    { key: "analytics", label: "Trends", icon: TrendingUp },
+    { key: "reports", label: "Reports", icon: FileText },
+    { key: "settings", label: profile.role === "admin" ? "Settings & Admin" : "Settings", icon: Settings },
   ];
 
   return (
@@ -341,23 +355,27 @@ export default function App() {
           <div className="brand-icon">BB</div>
           <div className="brand-info">
             <h2>BudgetBuddy</h2>
-            <span>STUDENT FINANCE</span>
+            <span>Student Finance</span>
           </div>
         </div>
 
         <nav className="nav-menu">
-          {navItems.map((item) => (
-            <button
-              key={item.key}
-              className={`nav-item ${activeTab === item.key ? "active" : ""}`}
-              onClick={() => { setActiveTab(item.key); setSidebarOpen(false); }}
-            >
-              <span>{item.label}</span>
-              {item.key === "budgets" && budgets.some((b) => b.is_over_budget) && (
-                <span className="nav-badge">Alert</span>
-              )}
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.key}
+                className={`nav-item ${activeTab === item.key ? "active" : ""}`}
+                onClick={() => { setActiveTab(item.key); setSidebarOpen(false); }}
+              >
+                <Icon size={16} />
+                <span>{item.label}</span>
+                {item.key === "budgets" && budgets.some((b) => b.is_over_budget) && (
+                  <span className="nav-badge">Alert</span>
+                )}
+              </button>
+            );
+          })}
         </nav>
 
         <div className="sidebar-footer">
@@ -371,7 +389,7 @@ export default function App() {
             </div>
           </div>
           <button className="btn btn-outline btn-sm" onClick={() => logout()}>
-            Sign Out ⎋
+            Sign Out
           </button>
         </div>
       </aside>
@@ -380,7 +398,9 @@ export default function App() {
       <div className="main-wrapper">
         {/* TOPBAR */}
         <header className="top-header">
-          <button className="mobile-menu-btn btn btn-outline" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}>☰</button>
+          <button className="mobile-menu-btn btn btn-outline" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}>
+            <Menu size={16} />
+          </button>
           <div className="header-title">
             <h1>
               {navItems.find((n) => n.key === activeTab)?.label}
@@ -394,14 +414,15 @@ export default function App() {
               aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             >
-              {theme === "dark" ? "☀ Light" : "☾ Dark"}
+              {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+              <span style={{ fontSize: "12px", marginLeft: "4px" }}>{theme === "dark" ? "Light" : "Dark"}</span>
             </button>
             <button
               className="btn btn-outline"
               style={{ position: "relative" }}
               onClick={() => setShowNotificationsModal(true)}
             >
-              🔔
+              <Bell size={15} />
               {unreadCount > 0 && (
                 <span className="nav-badge" style={{ position: "absolute", top: "-5px", right: "-5px" }}>
                   {unreadCount}
@@ -410,10 +431,10 @@ export default function App() {
             </button>
 
             <button
-              className="btn btn-primary btn-interactive record-transaction-btn"
+              className="btn btn-primary record-transaction-btn"
               onClick={handleOpenAddTransaction}
             >
-              + Record Transaction
+              <Plus size={14} /> Record Transaction
             </button>
           </div>
         </header>

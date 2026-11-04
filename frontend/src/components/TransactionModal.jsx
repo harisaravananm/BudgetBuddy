@@ -78,55 +78,52 @@ export default function TransactionModal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card modal-animated" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "22px" }}>{editItem ? "✏️" : "💳"}</span>
-            <div>
-              <h3>{editItem ? "Edit Transaction" : "Record Financial Transaction"}</h3>
-              <p style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                {editItem ? "Update details & re-calculate student budget impact" : "Log pocket money inflows or day-to-day campus expenses"}
-              </p>
-            </div>
+          <div>
+            <h3>{editItem ? "Edit Transaction" : "Record Transaction"}</h3>
+            <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
+              {editItem ? "Update details and recalculate budget impact" : "Log pocket money inflows or day-to-day student expenses"}
+            </p>
           </div>
-          <button className="btn btn-outline btn-sm btn-close-hover" onClick={onClose}>✕</button>
+          <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {!editItem && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                 <button
                   type="button"
-                  className={`btn ${type === "expense" ? "btn-danger active-shadow-danger" : "btn-outline"} btn-interactive`}
+                  className={`btn ${type === "expense" ? "btn-danger" : "btn-outline"}`}
                   onClick={() => setType("expense")}
                 >
-                  💸 Student Expense
+                  Expense
                 </button>
                 <button
                   type="button"
-                  className={`btn ${type === "income" ? "btn-success active-shadow-success" : "btn-outline"} btn-interactive`}
+                  className={`btn ${type === "income" ? "btn-success" : "btn-outline"}`}
                   onClick={() => setType("income")}
                 >
-                  💰 Pocket Money / Income
+                  Inflow / Income
                 </button>
               </div>
             )}
 
             {type === "expense" ? (
               <div className="form-group">
-                <label>Expense Category (Milestone 2 Specification)</label>
+                <label>Category</label>
                 <select
                   className="form-control"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                 >
-                  <option value="food">🍔 Food & Dining</option>
-                  <option value="travel">✈️ Travel & Transit</option>
-                  <option value="shopping">🛍️ Shopping & Supplies</option>
-                  <option value="education">📚 Education & Books</option>
-                  <option value="entertainment">🎬 Entertainment & Leisure</option>
-                  <option value="misc">📦 Miscellaneous Expenses</option>
+                  <option value="food">Food & Dining</option>
+                  <option value="travel">Travel & Transit</option>
+                  <option value="shopping">Shopping & Supplies</option>
+                  <option value="education">Education & Books</option>
+                  <option value="entertainment">Entertainment & Leisure</option>
+                  <option value="misc">Miscellaneous</option>
                 </select>
               </div>
             ) : (
@@ -137,10 +134,10 @@ export default function TransactionModal({
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
                 >
-                  <option value="pocket_money">👛 Pocket Money (Parents/Allowance)</option>
-                  <option value="scholarship">🎓 Scholarship / Merit Grant</option>
-                  <option value="freelance">💻 Freelance / Internship Stipend</option>
-                  <option value="other">💵 Other Inflow Sources</option>
+                  <option value="pocket_money">Pocket Money (Parents / Allowance)</option>
+                  <option value="scholarship">Scholarship / Merit Grant</option>
+                  <option value="freelance">Freelance / Internship</option>
+                  <option value="other">Other Inflow</option>
                 </select>
               </div>
             )}
@@ -159,40 +156,32 @@ export default function TransactionModal({
               />
             </div>
 
-            {/* INNOVATION: Real-time Percentage Impact Preview */}
+            {/* Live Percentage Impact Preview */}
             {type === "expense" && impactPercent !== null && (
               <div
-                className="innovation-callout"
                 style={{
                   background: parseFloat(impactPercent) > 20
-                    ? "rgba(239, 68, 68, 0.12)"
+                    ? "var(--danger-bg)"
                     : parseFloat(impactPercent) > 10
-                    ? "rgba(245, 158, 11, 0.12)"
-                    : "rgba(99, 102, 241, 0.12)",
+                    ? "var(--warning-bg)"
+                    : "var(--primary-subtle)",
                   border: `1px solid ${
                     parseFloat(impactPercent) > 20
-                      ? "rgba(239, 68, 68, 0.3)"
+                      ? "var(--danger-border)"
                       : parseFloat(impactPercent) > 10
-                      ? "rgba(245, 158, 11, 0.3)"
-                      : "rgba(99, 102, 241, 0.3)"
+                      ? "var(--warning-border)"
+                      : "var(--border-accent)"
                   }`,
                   borderRadius: "var(--radius-md)",
-                  padding: "12px 14px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
+                  padding: "10px 14px",
+                  fontSize: "12px",
                 }}
               >
-                <span style={{ fontSize: "18px" }}>
-                  {parseFloat(impactPercent) > 20 ? "⚠️" : "💡"}
-                </span>
-                <div style={{ fontSize: "12px", lineHeight: "1.4" }}>
-                  <strong style={{ color: parseFloat(impactPercent) > 20 ? "#f87171" : "#a5b4fc" }}>
-                    Relative Spending Impact: {impactPercent}% of monthly allocation
-                  </strong>
-                  <div style={{ color: "var(--text-muted)", fontSize: "11px" }}>
-                    This expense will consume <strong>{impactPercent}%</strong> of your monthly {budgetLimit > 0 ? "budget limit" : "pocket money"}.
-                  </div>
+                <div style={{ fontWeight: 600, color: parseFloat(impactPercent) > 20 ? "var(--danger)" : "var(--primary)" }}>
+                  Budget Impact: {impactPercent}% of monthly allocation
+                </div>
+                <div style={{ color: "var(--text-muted)", fontSize: "11px", marginTop: "2px" }}>
+                  This expense will consume <strong>{impactPercent}%</strong> of your monthly {budgetLimit > 0 ? "budget limit" : "pocket money"}.
                 </div>
               </div>
             )}
@@ -213,23 +202,23 @@ export default function TransactionModal({
               <input
                 type="text"
                 className="form-control"
-                placeholder="e.g. Library books, Hostel mess bill, Metro pass"
+                placeholder="e.g. Campus cafeteria lunch, books, train pass"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
               />
             </div>
 
-            {error && <p style={{ color: "var(--danger)", fontSize: "13px" }}>{error}</p>}
+            {error && <p style={{ color: "var(--danger)", fontSize: "12px" }}>{error}</p>}
           </div>
 
-          <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-subtle)", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-            <button type="button" className="btn btn-outline btn-interactive" onClick={onClose}>
+          <div style={{ padding: "14px 22px", borderTop: "1px solid var(--border-subtle)", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+            <button type="button" className="btn btn-outline" onClick={onClose}>
               Cancel
             </button>
             <button
               type="submit"
               disabled={busy}
-              className={`btn ${type === "expense" ? "btn-primary" : "btn-success"} btn-interactive`}
+              className={`btn ${type === "expense" ? "btn-primary" : "btn-success"}`}
             >
               {busy ? "Saving..." : editItem ? "Update Transaction" : `Save ${type === "expense" ? "Expense" : "Income"}`}
             </button>

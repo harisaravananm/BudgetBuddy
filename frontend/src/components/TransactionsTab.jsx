@@ -1,5 +1,18 @@
 import React, { useState } from "react";
+import {
+  TrendingDown,
+  ArrowUpRight,
+  Activity,
+  Plus,
+  Search,
+  Filter,
+  Calendar,
+  Edit2,
+  Trash2,
+  List,
+} from "lucide-react";
 import { financeApi } from "../api";
+import { money } from "../utils/currency";
 
 export default function TransactionsTab({
   expenses,
@@ -14,8 +27,8 @@ export default function TransactionsTab({
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [busyId, setBusyId] = useState(null);
-  const [percentMode, setPercentMode] = useState(true); // Default to true as user requested "money spent should be shown as % not in numbers"
-  const [viewMode, setViewMode] = useState("list"); // "list" or "daily"
+  const [percentMode, setPercentMode] = useState(true);
+  const [viewMode, setViewMode] = useState("list");
 
   // Calculate total expense & income for percentage calculations
   const totalExpenseAmount = expenses.reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
@@ -90,164 +103,166 @@ export default function TransactionsTab({
 
   return (
     <div className="tab-container-animate">
-      {/* INNOVATIVE HEADER STATS: MONEY SPENT SHOWN AS % NOT IN NUMBERS */}
+      {/* HEADER METRICS BANNER (MONEY SPENT SHOWN AS %) */}
       <section className="stats-grid" style={{ marginBottom: "24px" }}>
-        
-        {/* KEY USER SPEC: Money Spent Shown as % */}
-        <article className="stat-card stat-card-hover-glow" style={{ borderColor: "rgba(239, 68, 68, 0.35)" }}>
+        {/* Money Spent Shown as % */}
+        <article className="stat-card" style={{ borderColor: parseFloat(overallSpentPercent) > 80 ? "var(--danger-border)" : "var(--border-subtle)" }}>
           <div className="stat-card-header">
-            <span className="stat-card-label" style={{ color: "#f87171" }}>
-              Total Money Spent (% of Allowance)
+            <span className="stat-card-label" style={{ color: "var(--danger)" }}>
+              Total Expenses (% of Allowance)
             </span>
-            <div className="stat-card-icon" style={{ background: "rgba(239, 68, 68, 0.18)", color: "#f87171" }}>
-              📉
+            <div className="stat-card-icon" style={{ background: "var(--danger-bg)", color: "var(--danger)" }}>
+              <TrendingDown size={18} />
             </div>
           </div>
-          <div className="stat-card-value font-mono" style={{ color: "#f87171", fontSize: "30px" }}>
+          <div className="stat-card-value font-mono" style={{ color: "var(--danger)" }}>
             {overallSpentPercent}% Spent
           </div>
           <div className="stat-card-sub">
-            <span className="badge" style={{ background: "rgba(239, 68, 68, 0.15)", color: "#fca5a5" }}>
-              {parseFloat(overallSpentPercent) > 80 ? "⚠️ High Depletion" : "✅ Within Threshold"}
+            <span className="badge" style={{ background: "var(--danger-bg)", color: "var(--danger-text)" }}>
+              {parseFloat(overallSpentPercent) > 80 ? "High depletion" : "Safe buffer"}
             </span>
             <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
-              {100 - Math.min(100, parseFloat(overallSpentPercent))}% remaining buffer
+              {(100 - Math.min(100, parseFloat(overallSpentPercent))).toFixed(1)}% remaining
             </span>
           </div>
         </article>
 
-        <article className="stat-card stat-card-hover-glow">
+        {/* Inflows */}
+        <article className="stat-card">
           <div className="stat-card-header">
-            <span className="stat-card-label">Verified Income Inflows</span>
-            <div className="stat-card-icon" style={{ background: "rgba(16, 185, 129, 0.18)", color: "var(--success)" }}>
-              💰
+            <span className="stat-card-label">Total Inflows</span>
+            <div className="stat-card-icon" style={{ background: "var(--success-bg)", color: "var(--success)" }}>
+              <ArrowUpRight size={18} />
             </div>
           </div>
           <div className="stat-card-value font-mono" style={{ color: "var(--success)" }}>
-            ₹{totalIncomeAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+            ₹{money.format(totalIncomeAmount)}
           </div>
           <div className="stat-card-sub">
-            <span>{incomes.length} inflow events recorded</span>
+            <span>{incomes.length} inflow transactions</span>
           </div>
         </article>
 
-        <article className="stat-card stat-card-hover-glow">
+        {/* Daily Velocity */}
+        <article className="stat-card">
           <div className="stat-card-header">
-            <span className="stat-card-label">Relative Spend Velocity</span>
-            <div className="stat-card-icon" style={{ background: "rgba(99, 102, 241, 0.18)", color: "var(--primary)" }}>
-              ⚡
+            <span className="stat-card-label">Daily Spend Velocity</span>
+            <div className="stat-card-icon" style={{ background: "var(--primary-subtle)", color: "var(--primary)" }}>
+              <Activity size={18} />
             </div>
           </div>
           <div className="stat-card-value font-mono" style={{ color: "var(--primary)" }}>
-            {(parseFloat(overallSpentPercent) / (new Date().getDate() || 1)).toFixed(1)}% <span style={{ fontSize: "14px", color: "var(--text-dim)" }}>/ day</span>
+            {(parseFloat(overallSpentPercent) / (new Date().getDate() || 1)).toFixed(1)}% <span style={{ fontSize: "13px", color: "var(--text-dim)", fontWeight: 400 }}>/ day</span>
           </div>
           <div className="stat-card-sub">
-            <span>Day {new Date().getDate()} burn pace across month</span>
+            <span>Day {new Date().getDate()} average daily pacing</span>
           </div>
         </article>
 
-        <article className="stat-card stat-card-hover-glow">
+        {/* View Mode Toggle */}
+        <article className="stat-card">
           <div className="stat-card-header">
-            <span className="stat-card-label">Student Behavioral Mode</span>
-            <div className="stat-card-icon" style={{ background: "rgba(6, 182, 212, 0.18)", color: "var(--info)" }}>
-              🧠
-            </div>
+            <span className="stat-card-label">Display Preference</span>
           </div>
           <div style={{ marginTop: "4px" }}>
-            <button
-              onClick={() => setPercentMode(!percentMode)}
-              className={`btn btn-sm ${percentMode ? "btn-primary" : "btn-outline"} btn-interactive`}
-              style={{ width: "100%", justifyContent: "space-between", padding: "8px 12px" }}
-            >
-              <span>{percentMode ? "⚡ Spent As % (Active)" : "₹ Show Currency"}</span>
-              <span style={{ fontSize: "11px", opacity: 0.8 }}>Toggle</span>
-            </button>
+            <div className="view-toggle-group" style={{ width: "100%", justifyContent: "center" }}>
+              <button
+                className={`view-toggle-btn ${percentMode ? "active" : ""}`}
+                style={{ flex: 1, textAlign: "center" }}
+                onClick={() => setPercentMode(true)}
+              >
+                % Percent View
+              </button>
+              <button
+                className={`view-toggle-btn ${!percentMode ? "active" : ""}`}
+                style={{ flex: 1, textAlign: "center" }}
+                onClick={() => setPercentMode(false)}
+              >
+                ₹ Currency View
+              </button>
+            </div>
           </div>
-          <div className="stat-card-sub" style={{ marginTop: "8px" }}>
+          <div className="stat-card-sub" style={{ marginTop: "10px" }}>
             <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
-              {percentMode ? "Eliminates number bias by showing spent as %" : "Standard numeric currency view"}
+              {percentMode ? "Showing expenses as % of monthly budget" : "Showing raw currency amounts"}
             </span>
           </div>
         </article>
       </section>
 
       {/* TRANSACTIONS PANEL */}
-      <div className="panel panel-interactive">
+      <div className="panel">
         <div className="panel-header">
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <h3>Student Financial Transaction Ledger</h3>
-              <span className="badge" style={{ background: "rgba(99, 102, 241, 0.2)", color: "#a5b4fc" }}>
-                Milestone 2 Operational
-              </span>
-            </div>
-            <p>Track pocket money, college stipends, mess, transport, and daily spending</p>
+            <h3>Transaction Ledger</h3>
+            <p>Track student pocket money, stipends, and day-to-day spending</p>
           </div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <div className="view-toggle-group">
               <button
-                className={`btn btn-sm ${viewMode === "list" ? "btn-primary" : "btn-outline"} btn-interactive`}
+                className={`view-toggle-btn ${viewMode === "list" ? "active" : ""}`}
                 onClick={() => setViewMode("list")}
               >
-                📋 Table View
+                <List size={13} style={{ verticalAlign: "middle", marginRight: "4px" }} /> Table
               </button>
               <button
-                className={`btn btn-sm ${viewMode === "daily" ? "btn-primary" : "btn-outline"} btn-interactive`}
+                className={`view-toggle-btn ${viewMode === "daily" ? "active" : ""}`}
                 onClick={() => setViewMode("daily")}
               >
-                📅 Daily Breakdown
+                <Calendar size={13} style={{ verticalAlign: "middle", marginRight: "4px" }} /> Daily
               </button>
             </div>
-            <button className="btn btn-primary btn-interactive" onClick={onOpenAddModal}>
-              + Record Transaction
+            <button className="btn btn-primary" onClick={onOpenAddModal}>
+              <Plus size={14} /> Record Transaction
             </button>
           </div>
         </div>
 
         {/* CONTROLS ROW */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "20px", alignItems: "center" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "18px", alignItems: "center" }}>
           <div style={{ display: "flex", gap: "6px" }}>
             <button
-              className={`btn btn-sm ${filterType === "all" ? "btn-primary" : "btn-outline"} btn-interactive`}
+              className={`btn btn-sm ${filterType === "all" ? "btn-primary" : "btn-outline"}`}
               onClick={() => setFilterType("all")}
             >
-              All Records ({combined.length})
+              All ({combined.length})
             </button>
             <button
-              className={`btn btn-sm ${filterType === "expense" ? "btn-danger" : "btn-outline"} btn-interactive`}
+              className={`btn btn-sm ${filterType === "expense" ? "btn-danger" : "btn-outline"}`}
               onClick={() => setFilterType("expense")}
             >
               Expenses ({expenses.length})
             </button>
             <button
-              className={`btn btn-sm ${filterType === "income" ? "btn-success" : "btn-outline"} btn-interactive`}
+              className={`btn btn-sm ${filterType === "income" ? "btn-success" : "btn-outline"}`}
               onClick={() => setFilterType("income")}
             >
-              Incomes ({incomes.length})
+              Inflows ({incomes.length})
             </button>
           </div>
 
-          <div style={{ display: "flex", gap: "12px", marginLeft: "auto", flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "10px", marginLeft: "auto", flexWrap: "wrap", alignItems: "center" }}>
             <select
               className="form-control"
-              style={{ width: "auto", padding: "6px 12px", fontSize: "12px" }}
+              style={{ width: "auto", padding: "6px 10px", fontSize: "12px" }}
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
-              <option value="all">🔍 All Categories & Sources</option>
+              <option value="all">All Categories & Sources</option>
               <optgroup label="Expense Categories">
-                <option value="food">🍔 Food & Dining</option>
-                <option value="travel">✈️ Travel & Transit</option>
-                <option value="shopping">🛍️ Shopping & Supplies</option>
-                <option value="education">📚 Education & Books</option>
-                <option value="entertainment">🎬 Entertainment</option>
-                <option value="misc">📦 Miscellaneous</option>
+                <option value="food">Food & Dining</option>
+                <option value="travel">Travel & Transit</option>
+                <option value="shopping">Shopping & Supplies</option>
+                <option value="education">Education & Books</option>
+                <option value="entertainment">Entertainment</option>
+                <option value="misc">Miscellaneous</option>
               </optgroup>
               <optgroup label="Income Sources">
-                <option value="pocket_money">👛 Pocket Money</option>
-                <option value="scholarship">🎓 Scholarship</option>
-                <option value="freelance">💻 Freelance / Projects</option>
-                <option value="other">💵 Other Inflow</option>
+                <option value="pocket_money">Pocket Money</option>
+                <option value="scholarship">Scholarship / Grant</option>
+                <option value="freelance">Freelance / Projects</option>
+                <option value="other">Other Inflow</option>
               </optgroup>
             </select>
 
@@ -255,7 +270,7 @@ export default function TransactionsTab({
               type="text"
               placeholder="Search description, note, amount..."
               className="form-control"
-              style={{ width: "230px", padding: "6px 12px", fontSize: "12px" }}
+              style={{ width: "220px", padding: "6px 12px", fontSize: "12px" }}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -265,7 +280,7 @@ export default function TransactionsTab({
         {/* LIST / TABLE VIEW */}
         {viewMode === "list" && (
           <div className="table-responsive">
-            <table className="custom-table table-hover-effect">
+            <table className="custom-table">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -281,9 +296,8 @@ export default function TransactionsTab({
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-muted)" }}>
-                      <p style={{ fontSize: "28px", marginBottom: "8px" }}>🔍</p>
-                      <p>No matching transactions found in this filter.</p>
+                    <td colSpan="6" style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
+                      No matching transactions found in this filter.
                     </td>
                   </tr>
                 ) : (
@@ -291,17 +305,16 @@ export default function TransactionsTab({
                     const isExp = item.txnType === "expense";
                     const expPct = isExp ? getExpensePercentage(item.amount) : null;
                     return (
-                      <tr key={`${item.txnType}-${item.id}`} className="tr-interactive">
-                        <td style={{ whiteSpace: "nowrap", fontFamily: "var(--font-mono)", fontSize: "12px" }}>
+                      <tr key={`${item.txnType}-${item.id}`}>
+                        <td style={{ whiteSpace: "nowrap", fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-muted)" }}>
                           {item.date}
                         </td>
                         <td>
                           <span
-                            className="badge badge-glow"
+                            className="badge"
                             style={{
-                              background: isExp ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)",
-                              color: isExp ? "#f87171" : "#34d399",
-                              border: `1px solid ${isExp ? "rgba(239,68,68,0.3)" : "rgba(16,185,129,0.3)"}`,
+                              background: isExp ? "var(--danger-bg)" : "var(--success-bg)",
+                              color: isExp ? "var(--danger)" : "var(--success)",
                             }}
                           >
                             {isExp ? "Expense" : "Income"}
@@ -309,20 +322,17 @@ export default function TransactionsTab({
                         </td>
                         <td>
                           {isExp ? (
-                            <span className={`badge badge-${item.category} badge-hover-pulse`}>
+                            <span className={`badge badge-${item.category}`}>
                               {item.category.toUpperCase()}
                             </span>
                           ) : (
-                            <span
-                              className="badge badge-hover-pulse"
-                              style={{ background: "rgba(6,182,212,0.15)", color: "#22d3ee", border: "1px solid rgba(6,182,212,0.3)" }}
-                            >
+                            <span className="badge" style={{ background: "var(--info-bg)", color: "var(--info)" }}>
                               {item.source.replace("_", " ").toUpperCase()}
                             </span>
                           )}
                         </td>
                         <td style={{ color: "var(--text-main)", maxWidth: "260px" }}>
-                          <span style={{ fontWeight: "500" }}>{item.note || "—"}</span>
+                          <span>{item.note || "—"}</span>
                         </td>
                         
                         {/* MONEY SPENT SHOWN AS % NOT IN NUMBERS */}
@@ -336,38 +346,40 @@ export default function TransactionsTab({
                                 >
                                   -{expPct}% of budget
                                 </span>
-                                <span style={{ fontSize: "10px", color: "var(--text-dim)", marginTop: "2px" }}>
+                                <span style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: "2px" }}>
                                   ₹{parseFloat(item.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                                 </span>
                               </div>
                             ) : (
-                              <span style={{ color: "var(--danger)", fontWeight: "700", fontFamily: "var(--font-mono)" }}>
+                              <span style={{ color: "var(--danger)", fontWeight: "600", fontFamily: "var(--font-mono)" }}>
                                 -₹{parseFloat(item.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                               </span>
                             )
                           ) : (
-                            <span style={{ color: "var(--success)", fontWeight: "700", fontFamily: "var(--font-mono)" }}>
+                            <span style={{ color: "var(--success)", fontWeight: "600", fontFamily: "var(--font-mono)" }}>
                               +₹{parseFloat(item.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                             </span>
                           )}
                         </td>
 
                         <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                          <div style={{ display: "inline-flex", gap: "6px" }}>
+                          <div style={{ display: "inline-flex", gap: "4px" }}>
                             <button
-                              className="btn btn-outline btn-sm btn-interactive"
+                              className="btn btn-outline btn-sm"
+                              style={{ padding: "4px 8px" }}
                               title="Edit transaction"
                               onClick={() => onOpenEditModal(item)}
                             >
-                              ✏️ Edit
+                              <Edit2 size={12} />
                             </button>
                             <button
-                              className="btn btn-outline btn-sm btn-interactive btn-danger-hover"
-                              style={{ color: "var(--danger)" }}
+                              className="btn btn-outline btn-sm"
+                              style={{ padding: "4px 8px", color: "var(--danger)" }}
                               disabled={busyId === item.id}
                               onClick={() => handleDelete(item)}
+                              title="Delete transaction"
                             >
-                              ✕
+                              <Trash2 size={12} />
                             </button>
                           </div>
                         </td>
@@ -380,9 +392,9 @@ export default function TransactionsTab({
           </div>
         )}
 
-        {/* DAILY BREAKDOWN TIMELINE VIEW (Milestone 2 Daily Transaction History) */}
+        {/* DAILY BREAKDOWN TIMELINE VIEW */}
         {viewMode === "daily" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {Object.keys(dailyGroups).length === 0 ? (
               <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>
                 No transaction records available.
@@ -400,63 +412,62 @@ export default function TransactionsTab({
                 return (
                   <div key={dayDate} className="daily-group-card">
                     <div className="daily-group-header">
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <span style={{ fontSize: "16px" }}>🗓️</span>
-                        <strong style={{ fontSize: "14px" }}>{dayDate}</strong>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Calendar size={15} style={{ color: "var(--text-muted)" }} />
+                        <strong style={{ fontSize: "13.5px", color: "var(--text-main)" }}>{dayDate}</strong>
                         <span style={{ fontSize: "12px", color: "var(--text-dim)" }}>
-                          ({dayItems.length} transactions)
+                          ({dayItems.length} records)
                         </span>
                       </div>
-                      <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
+                      <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                         {dayIncomeSum > 0 && (
-                          <span style={{ color: "var(--success)", fontWeight: "700", fontSize: "12px" }}>
-                            +{dayIncomeSum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                          <span style={{ color: "var(--success)", fontWeight: "600", fontSize: "12px" }}>
+                            +₹{money.format(dayIncomeSum)}
                           </span>
                         )}
-                        {/* Money Spent shown as % */}
-                        <span className="badge" style={{ background: "rgba(239, 68, 68, 0.18)", color: "#f87171" }}>
-                          Spent: {percentMode ? `-${daySpentPct}% of allocation` : `-₹${dayExpenseSum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`}
+                        <span className="badge" style={{ background: "var(--danger-bg)", color: "var(--danger)" }}>
+                          Spent: {percentMode ? `-${daySpentPct}% of allocation` : `-₹${money.format(dayExpenseSum)}`}
                         </span>
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "10px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "10px" }}>
                       {dayItems.map((item) => {
                         const isExp = item.txnType === "expense";
                         const itemPct = isExp ? getExpensePercentage(item.amount) : null;
                         return (
                           <div key={`${item.txnType}-${item.id}`} className="daily-sub-item">
-                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                              <span className={`badge ${isExp ? `badge-${item.category}` : "badge-info"}`}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <span className={`badge ${isExp ? `badge-${item.category}` : ""}`} style={!isExp ? { background: "var(--info-bg)", color: "var(--info)" } : {}}>
                                 {(item.category || item.source).toUpperCase()}
                               </span>
                               <span style={{ fontSize: "13px", color: "var(--text-main)" }}>
                                 {item.note || "No note recorded"}
                               </span>
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                               {isExp ? (
-                                <span style={{ color: "#f87171", fontWeight: "700", fontFamily: "var(--font-mono)" }}>
-                                  {percentMode ? `-${itemPct}% of budget` : `-₹${parseFloat(item.amount).toLocaleString("en-IN")}`}
+                                <span style={{ color: "var(--danger)", fontWeight: "600", fontFamily: "var(--font-mono)", fontSize: "12.5px" }}>
+                                  {percentMode ? `-${itemPct}% of budget` : `-₹${money.format(item.amount)}`}
                                 </span>
                               ) : (
-                                <span style={{ color: "var(--success)", fontWeight: "700", fontFamily: "var(--font-mono)" }}>
-                                  +₹{parseFloat(item.amount).toLocaleString("en-IN")}
+                                <span style={{ color: "var(--success)", fontWeight: "600", fontFamily: "var(--font-mono)", fontSize: "12.5px" }}>
+                                  +₹{money.format(item.amount)}
                                 </span>
                               )}
                               <button
-                                className="btn btn-outline btn-sm btn-interactive"
-                                style={{ padding: "2px 6px", fontSize: "11px" }}
+                                className="btn btn-outline btn-sm"
+                                style={{ padding: "2px 6px" }}
                                 onClick={() => onOpenEditModal(item)}
                               >
-                                ✏️
+                                <Edit2 size={11} />
                               </button>
                               <button
-                                className="btn btn-outline btn-sm btn-interactive"
-                                style={{ padding: "2px 6px", fontSize: "11px", color: "var(--danger)" }}
+                                className="btn btn-outline btn-sm"
+                                style={{ padding: "2px 6px", color: "var(--danger)" }}
                                 onClick={() => handleDelete(item)}
                               >
-                                ✕
+                                <Trash2 size={11} />
                               </button>
                             </div>
                           </div>

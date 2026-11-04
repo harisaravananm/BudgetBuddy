@@ -1,11 +1,18 @@
 import React, { useState } from "react";
+import {
+  Target,
+  Sliders,
+  Sparkles,
+  Plus,
+  Trash2,
+  Edit2,
+  AlertTriangle,
+  Layers,
+  CheckCircle,
+} from "lucide-react";
 import { financeApi } from "../api";
+import { money } from "../utils/currency";
 import { categoryVisuals } from "../categoryVisuals";
-
-const money = new Intl.NumberFormat("en-IN", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 
 export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -20,10 +27,12 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const displayedBudgets = budgets.filter((budget) => budget.month?.startsWith(month.slice(0, 7)));
 
-  // Total allocated & overall
-  const totalAllocated = displayedBudgets.reduce((acc, b) => acc + (b.category ? parseFloat(b.limit_amount) : 0), 0);
+  const displayedBudgets = budgets;
+  const totalAllocated = displayedBudgets.reduce(
+    (acc, b) => acc + (b.category ? parseFloat(b.limit_amount) : 0),
+    0
+  );
   const overallBudget = displayedBudgets.find((b) => !b.category);
 
   // Overall percentage of budget spent
@@ -31,8 +40,8 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
     ? overallBudget.percentage_used
     : displayedBudgets.length > 0
     ? (
-      (displayedBudgets.reduce((acc, b) => acc + parseFloat(b.spent_amount || 0), 0) /
-        Math.max(1, displayedBudgets.reduce((acc, b) => acc + parseFloat(b.limit_amount || 0), 0))) *
+        (displayedBudgets.reduce((acc, b) => acc + parseFloat(b.spent_amount || 0), 0) /
+          Math.max(1, displayedBudgets.reduce((acc, b) => acc + parseFloat(b.limit_amount || 0), 0))) *
         100
       ).toFixed(1)
     : "0.0";
@@ -96,26 +105,21 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
     }
   }
 
-  // INNOVATION: Student 50/30/20 Smart Budget Generator
   async function applySmartBudget(inflowBase) {
     setBusy(true);
     setError("");
     try {
       const base = parseFloat(inflowBase) || totalIncome || 10000;
-      // 50% Needs: Food (30%), Travel (20%)
-      // 30% Wants: Shopping (15%), Entertainment (15%)
-      // 20% Growth: Education (10%), Misc (10%)
       const allocations = [
         { category: "", limit_amount: (base * 0.9).toFixed(2), label: "Overall Monthly Ceiling" },
         { category: "food", limit_amount: (base * 0.3).toFixed(2), label: "Food & Dining (30%)" },
         { category: "travel", limit_amount: (base * 0.2).toFixed(2), label: "Travel & Transit (20%)" },
         { category: "shopping", limit_amount: (base * 0.15).toFixed(2), label: "Shopping & Supplies (15%)" },
-        { category: "entertainment", limit_amount: (base * 0.15).toFixed(2), label: "Entertainment & Leisure (15%)" },
+        { category: "entertainment", limit_amount: (base * 0.15).toFixed(2), label: "Entertainment (15%)" },
         { category: "education", limit_amount: (base * 0.1).toFixed(2), label: "Education & Books (10%)" },
       ];
 
       for (const item of allocations) {
-        // check if already exists
         const existing = displayedBudgets.find((b) => (b.category || "") === item.category);
         if (existing) {
           await financeApi.updateBudget(existing.id, {
@@ -142,37 +146,35 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
 
   return (
     <div className="tab-container-animate">
-      {/* SUMMARY BANNER: SHOWING MONEY SPENT AS % NOT IN NUMBERS */}
-      <div className="stats-grid" style={{ marginBottom: "28px" }}>
-        
-        {/* MONEY SPENT AS % FOCUS */}
-        <article className="stat-card stat-card-hover-glow" style={{ borderColor: parseFloat(overallSpentPercent) > 85 ? "rgba(239, 68, 68, 0.4)" : "var(--primary-glow)" }}>
+      {/* SUMMARY BANNER */}
+      <div className="stats-grid" style={{ marginBottom: "24px" }}>
+        {/* Overall Percentage Spent */}
+        <article className="stat-card">
           <div className="stat-card-header">
-            <span className="stat-card-label" style={{ color: parseFloat(overallSpentPercent) > 85 ? "#f87171" : "var(--primary)" }}>
-              Budget Consumed (% Spent)
-            </span>
-            <div className="stat-card-icon" style={{ background: "rgba(99, 102, 241, 0.18)", color: "var(--primary)" }}>
-              🎯
+            <span className="stat-card-label">Monthly Ceiling Spent</span>
+            <div className="stat-card-icon" style={{ background: "var(--primary-subtle)", color: "var(--primary)" }}>
+              <Target size={18} />
             </div>
           </div>
-          <div className="stat-card-value font-mono" style={{ color: parseFloat(overallSpentPercent) > 100 ? "var(--danger)" : parseFloat(overallSpentPercent) > 80 ? "var(--warning)" : "var(--primary)", fontSize: "32px" }}>
+          <div className="stat-card-value font-mono" style={{ color: parseFloat(overallSpentPercent) > 100 ? "var(--danger)" : parseFloat(overallSpentPercent) > 80 ? "var(--warning)" : "var(--primary)" }}>
             {overallSpentPercent}% Spent
           </div>
           <div className="stat-card-sub">
-            <span className="badge" style={{ background: parseFloat(overallSpentPercent) > 100 ? "rgba(239,68,68,0.2)" : "rgba(16,185,129,0.15)", color: parseFloat(overallSpentPercent) > 100 ? "#f87171" : "#34d399" }}>
-              {parseFloat(overallSpentPercent) > 100 ? "🚨 Overspent!" : `${(100 - Math.min(100, parseFloat(overallSpentPercent))).toFixed(1)}% Headroom`}
+            <span className="badge" style={{ background: parseFloat(overallSpentPercent) > 100 ? "var(--danger-bg)" : "var(--success-bg)", color: parseFloat(overallSpentPercent) > 100 ? "var(--danger)" : "var(--success)" }}>
+              {parseFloat(overallSpentPercent) > 100 ? "Over budget" : `${(100 - Math.min(100, parseFloat(overallSpentPercent))).toFixed(1)}% buffer`}
             </span>
             <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
-              Ceiling: ₹{overallBudget ? money.format(Number(overallBudget.limit_amount)) : "Not Set"}
+              Cap: ₹{overallBudget ? money.format(overallBudget.limit_amount) : "Not Set"}
             </span>
           </div>
         </article>
 
-        <article className="stat-card stat-card-hover-glow">
+        {/* Category Allocations */}
+        <article className="stat-card">
           <div className="stat-card-header">
-            <span className="stat-card-label">Category Guardrails</span>
-            <div className="stat-card-icon" style={{ background: "rgba(6, 182, 212, 0.18)", color: "var(--info)" }}>
-              📊
+            <span className="stat-card-label">Allocated Categories</span>
+            <div className="stat-card-icon" style={{ background: "var(--info-bg)", color: "var(--info)" }}>
+              <Layers size={18} />
             </div>
           </div>
           <div className="stat-card-value font-mono" style={{ color: "var(--info)" }}>
@@ -183,31 +185,32 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
           </div>
         </article>
 
-        <article className="stat-card stat-card-hover-glow">
+        {/* Alerts */}
+        <article className="stat-card">
           <div className="stat-card-header">
-            <span className="stat-card-label">Overspending & Threshold Alerts</span>
-            <div className="stat-card-icon" style={{ background: "rgba(245, 158, 11, 0.18)", color: "var(--warning)" }}>
-              ⚠️
+            <span className="stat-card-label">Active Threshold Alerts</span>
+            <div className="stat-card-icon" style={{ background: "var(--warning-bg)", color: "var(--warning)" }}>
+              <AlertTriangle size={18} />
             </div>
           </div>
           <div className="stat-card-value font-mono" style={{ color: displayedBudgets.some((b) => b.is_over_budget) ? "var(--danger)" : "var(--success)" }}>
             {displayedBudgets.filter((b) => b.is_alert || b.is_over_budget).length} Alerts
           </div>
           <div className="stat-card-sub">
-            <span style={{ color: budgets.some((b) => b.is_over_budget) ? "var(--danger)" : "var(--success)" }}>
+            <span style={{ color: displayedBudgets.some((b) => b.is_over_budget) ? "var(--danger)" : "var(--success)" }}>
               {displayedBudgets.filter((b) => b.is_over_budget).length} categories exceeding limit
             </span>
           </div>
         </article>
       </div>
 
-      {/* INNOVATIVE ACTION TOOLBAR */}
-      <div className="panel panel-interactive" style={{ padding: "18px 24px", marginBottom: "28px", background: "linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.08))" }}>
+      {/* SMART BUDGET ACTION TOOLBAR */}
+      <div className="panel" style={{ padding: "18px 24px", marginBottom: "24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "20px" }}>💡</span>
-              <strong style={{ fontSize: "15px", color: "white" }}>Innovation: 50/30/20 Student Budget Allocator</strong>
+              <Sparkles size={18} style={{ color: "var(--primary)" }} />
+              <strong style={{ fontSize: "14.5px", color: "var(--text-main)" }}>50/30/20 Smart Budget Plan</strong>
             </div>
             <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
               Automatically construct balanced category budgets based on your monthly pocket money & scholarship inflows.
@@ -215,143 +218,123 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
             <button
-              className="btn btn-outline btn-interactive"
-              style={{ borderColor: "rgba(99, 102, 241, 0.5)", background: "rgba(99, 102, 241, 0.15)" }}
+              className="btn btn-outline"
               onClick={() => setShowSmartModal(true)}
             >
-              ✨ Auto-Allocate (50/30/20)
+              <Sparkles size={14} /> Auto-Allocate (50/30/20)
             </button>
-            <button className="btn btn-primary btn-interactive" onClick={openNew}>
-              + Set Budget Limit
+            <button className="btn btn-primary" onClick={openNew}>
+              <Plus size={14} /> Set Budget Limit
             </button>
           </div>
         </div>
       </div>
 
       {/* BUDGET CARDS PANEL */}
-      <div className="panel panel-interactive">
+      <div className="panel">
         <div className="panel-header">
           <div>
-            <h3>Monthly Budget Allocation & Spending Guardrails</h3>
-            <p>Spending is evaluated as percentage utilized to avoid cognitive financial fatigue</p>
+            <h3>Monthly Category Budgets</h3>
+            <p>Spending is evaluated as percentage utilized against guardrails</p>
           </div>
         </div>
 
         {displayedBudgets.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
-            <p style={{ fontSize: "36px", marginBottom: "12px" }}>🎯</p>
-            <h4 style={{ color: "white", marginBottom: "6px" }}>No Budgets Configured For This Month</h4>
+          <div style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-muted)" }}>
+            <p style={{ fontSize: "14px", marginBottom: "8px", color: "var(--text-main)", fontWeight: 600 }}>No budgets configured for this month</p>
             <p style={{ maxWidth: "420px", margin: "0 auto 16px auto", fontSize: "13px" }}>
-              Setting up category limits is essential for students to prevent running out of pocket money before the month ends.
+              Set category limits to keep student pocket money from running out before the month ends.
             </p>
-            <button className="btn btn-primary btn-interactive" onClick={() => setShowSmartModal(true)}>
-              ✨ 1-Click Auto-Allocate My Budget
+            <button className="btn btn-primary" onClick={() => setShowSmartModal(true)}>
+              <Sparkles size={14} /> Auto-Allocate My Budget
             </button>
           </div>
         ) : (
-          <div className="budgets-card-grid" style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "20px" }}>
             {displayedBudgets.map((b) => {
-              const pct = Number(b.percentage_used || 0);
-              const status = b.status || (pct > 100 ? "exceeded" : pct >= Number(b.alert_threshold_percent) ? "warning" : "safe");
-              const isOver = status === "exceeded";
-              const isAlert = status === "warning";
+              const pct = b.percentage_used;
+              const isOver = b.is_over_budget;
+              const isAlert = b.is_alert;
               const barColor = isOver ? "var(--danger)" : isAlert ? "var(--warning)" : "var(--success)";
-              const visual = categoryVisuals[b.category || ""] || categoryVisuals.misc;
-              const Icon = visual.icon;
-              const title = visual.label;
-              const remaining = Number(b.remaining_amount || 0);
+              const title = b.category ? b.category.toUpperCase() : "OVERALL MONTHLY CEILING";
+              const meta = categoryVisuals[b.category || ""] || categoryVisuals[""];
+              const CategoryIcon = meta.icon;
 
               return (
                 <div
                   key={b.id}
                   className="budget-card-enhanced"
                   style={{
-                    borderColor: isOver
-                      ? "rgba(239, 68, 68, 0.6)"
-                      : isAlert
-                      ? "rgba(245, 158, 11, 0.6)"
-                      : "var(--border-subtle)",
-                    boxShadow: isOver
-                      ? "0 10px 30px -10px rgba(239, 68, 68, 0.35)"
-                      : isAlert
-                      ? "0 10px 30px -10px rgba(245, 158, 11, 0.35)"
-                      : "none",
+                    borderColor: isOver ? "var(--danger-border)" : isAlert ? "var(--warning-border)" : "var(--border-subtle)",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span className="budget-category-icon" style={{ color: visual.color, background: `${visual.color}1a` }}>
-                        <Icon size={22} strokeWidth={2} aria-hidden="true" />
-                      </span>
+                      <div className="budget-category-icon" style={{ background: "var(--bg-muted)", color: meta.color }}>
+                        <CategoryIcon size={18} />
+                      </div>
                       <div>
-                        <h4 style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-main)" }}>{title}</h4>
+                        <h4 style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-main)" }}>{title}</h4>
                         <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
                           Cycle: {b.month.substring(0, 7)} • Alert at {b.alert_threshold_percent}%
                         </span>
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: "6px" }}>
+                    <div style={{ display: "flex", gap: "4px" }}>
                       <button
-                        className="btn btn-outline btn-sm btn-interactive"
-                        style={{ padding: "4px 8px", fontSize: "11px" }}
+                        className="btn btn-outline btn-sm"
+                        style={{ padding: "4px 8px" }}
                         onClick={() => openEdit(b)}
                         title="Edit limit"
                       >
-                        ✏️
+                        <Edit2 size={12} />
                       </button>
                       <button
-                        className="btn btn-outline btn-sm btn-interactive btn-danger-hover"
-                        style={{ padding: "4px 8px", fontSize: "11px", color: "var(--danger)" }}
+                        className="btn btn-outline btn-sm"
+                        style={{ padding: "4px 8px", color: "var(--danger)" }}
                         onClick={() => handleDelete(b.id)}
                         title="Delete limit"
                       >
-                        ✕
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </div>
 
-                  {/* USER SPECIFICATION: MONEY SPENT SHOWN AS % NOT IN NUMBERS */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: "6px" }}>
+                  {/* PERCENTAGE SPENT DISPLAY */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                     <div>
-                      <div className="font-mono" style={{ fontSize: "28px", fontWeight: "800", color: barColor }}>
+                      <div className="font-mono" style={{ fontSize: "24px", fontWeight: "700", color: barColor }}>
                         {pct}% Spent
                       </div>
-                      <span style={{ fontSize: "11px", color: isOver ? "#f87171" : isAlert ? "#fbbf24" : "var(--text-muted)" }}>
-                        {isOver ? `Over Budget by ₹${money.format(Math.abs(remaining))}` : isAlert ? "Approaching Limit" : "Safe Spending Trajectory"}
+                      <span style={{ fontSize: "11px", color: isOver ? "var(--danger)" : isAlert ? "var(--warning)" : "var(--text-muted)" }}>
+                        {isOver ? "Limit Exceeded" : isAlert ? "Warning Threshold" : "Healthy Pace"}
                       </span>
                     </div>
 
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: "12px", color: "var(--text-dim)" }}>
-                        Limit Ceiling: <strong>₹{money.format(Number(b.limit_amount))}</strong>
+                        Limit: <strong>₹{money.format(b.limit_amount)}</strong>
                       </div>
                       <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
-                        Remaining: <strong>{remaining >= 0 ? `₹${money.format(remaining)} left` : `₹${money.format(Math.abs(remaining))} over`}</strong>
+                        Remaining: <strong>{(100 - Math.min(100, pct)).toFixed(1)}% buffer</strong>
                       </div>
                     </div>
                   </div>
 
-                  {/* ANIMATED PROGRESS BAR WITH SHIMMER */}
-                  <div className="bar-track bar-track-animated" style={{ height: "12px" }}>
+                  {/* PROGRESS BAR */}
+                  <div className="bar-track" style={{ height: "8px" }}>
                     <div
-                      className={`bar-fill ${isOver ? "bar-fill-overspent" : "bar-fill-gradient"}`}
+                      className="bar-fill"
                       style={{
                         width: `${Math.min(100, pct)}%`,
                         background: barColor,
                       }}
                     />
-                    <span
-                      className="budget-threshold-marker"
-                      style={{ left: `${Math.min(100, Number(b.alert_threshold_percent))}%` }}
-                      title={`Alert threshold: ${b.alert_threshold_percent}%`}
-                    />
                   </div>
 
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-dim)", paddingTop: "4px", borderTop: "1px dashed var(--border-subtle)" }}>
-                    <span>Threshold Trigger: {b.alert_threshold_percent}%</span>
-                    <span className={remaining < 0 ? "budget-over-amount" : ""}>
-                      {remaining >= 0 ? `₹${money.format(remaining)} left` : `₹${money.format(Math.abs(remaining))} over`}
-                    </span>
+                    <span>Threshold: {b.alert_threshold_percent}%</span>
+                    <span>Remaining Amount: ₹{money.format(b.remaining_amount)}</span>
                   </div>
                 </div>
               );
@@ -363,33 +346,33 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
       {/* CREATE / EDIT BUDGET MODAL */}
       {showAddModal && (
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="modal-card modal-animated" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span style={{ fontSize: "22px" }}>{editBudget ? "✏️" : "🎯"}</span>
-                <div>
-                  <h3>{editBudget ? "Update Budget Guardrail" : "Create Student Budget Limit"}</h3>
-                  <p style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                    {editBudget ? "Adjust limit or notification alert threshold" : "Set spending caps by category to enforce financial discipline"}
-                  </p>
-                </div>
+              <div>
+                <h3>{editBudget ? "Update Budget Limit" : "Set Category Budget"}</h3>
+                <p style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                  {editBudget ? "Adjust limit or threshold alert" : "Establish monthly caps to prevent overspending"}
+                </p>
               </div>
-              <button className="btn btn-outline btn-sm btn-close-hover" onClick={() => setShowAddModal(false)}>✕</button>
+              <button className="btn btn-outline btn-sm" onClick={() => setShowAddModal(false)}>✕</button>
             </div>
             <form onSubmit={handleSaveBudget}>
               <div className="modal-body">
                 {!editBudget && (
                   <div className="form-group">
-                    <label>Budget Scope / Category</label>
+                    <label>Category Scope</label>
                     <select
                       className="form-control"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                     >
-                      <option value="">Overall Monthly Spending Limit</option>
-                      {Object.entries(categoryVisuals)
-                        .filter(([key]) => key)
-                        .map(([key, item]) => <option key={key} value={key}>{item.label}</option>)}
+                      <option value="">Overall Monthly Limit (Ceiling)</option>
+                      <option value="food">Food & Dining</option>
+                      <option value="travel">Travel & Transit</option>
+                      <option value="shopping">Shopping & Supplies</option>
+                      <option value="education">Education & Books</option>
+                      <option value="entertainment">Entertainment & Leisure</option>
+                      <option value="misc">Miscellaneous Expenses</option>
                     </select>
                   </div>
                 )}
@@ -411,7 +394,7 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
                 <div className="form-group">
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <label>Alert Trigger Threshold ({threshold}%)</label>
-                    <span style={{ fontSize: "12px", color: "var(--primary)", fontWeight: "700" }}>{threshold}%</span>
+                    <span style={{ fontSize: "12px", color: "var(--primary)", fontWeight: "600" }}>{threshold}%</span>
                   </div>
                   <input
                     type="range"
@@ -423,17 +406,17 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
                     style={{ accentColor: "var(--primary)" }}
                   />
                   <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
-                    Automated alert notification will fire when spending reaches {threshold}% of limit.
+                    Automated notification will trigger when category spending hits {threshold}% of limit.
                   </span>
                 </div>
 
                 {error && <p style={{ color: "var(--danger)", fontSize: "13px" }}>{error}</p>}
               </div>
-              <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-subtle)", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-                <button type="button" className="btn btn-outline btn-interactive" onClick={() => setShowAddModal(false)}>
+              <div style={{ padding: "16px 22px", borderTop: "1px solid var(--border-subtle)", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                <button type="button" className="btn btn-outline" onClick={() => setShowAddModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" disabled={busy} className="btn btn-primary btn-interactive">
+                <button type="submit" disabled={busy} className="btn btn-primary">
                   {busy ? "Saving..." : editBudget ? "Update Budget" : "Save Budget"}
                 </button>
               </div>
@@ -442,42 +425,39 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
         </div>
       )}
 
-      {/* INNOVATIVE SMART 50/30/20 ALLOCATOR MODAL */}
+      {/* SMART 50/30/20 ALLOCATOR MODAL */}
       {showSmartModal && (
         <div className="modal-overlay" onClick={() => setShowSmartModal(false)}>
-          <div className="modal-card modal-animated" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "560px" }}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "520px" }}>
             <div className="modal-header">
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span style={{ fontSize: "24px" }}>✨</span>
-                <div>
-                  <h3>50/30/20 Smart Student Budget Generator</h3>
-                  <p style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                    Algorithmic budget allocation engineered for university student pocket money
-                  </p>
-                </div>
+              <div>
+                <h3>50/30/20 Student Budget Blueprint</h3>
+                <p style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                  Algorithmic distribution engineered for student pocket money and stipends
+                </p>
               </div>
-              <button className="btn btn-outline btn-sm btn-close-hover" onClick={() => setShowSmartModal(false)}>✕</button>
+              <button className="btn btn-outline btn-sm" onClick={() => setShowSmartModal(false)}>✕</button>
             </div>
             <div className="modal-body">
               <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: "1.5" }}>
                 The 50/30/20 student budgeting framework distributes your monthly allowance or stipend into optimal discipline ratios:
               </p>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", margin: "10px 0" }}>
-                <div style={{ padding: "12px", background: "rgba(16, 185, 129, 0.1)", borderRadius: "var(--radius-sm)", border: "1px solid rgba(16, 185, 129, 0.25)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", margin: "8px 0" }}>
+                <div style={{ padding: "12px", background: "var(--success-bg)", borderRadius: "var(--radius-sm)", border: "1px solid var(--success-border)" }}>
                   <strong style={{ color: "var(--success)", fontSize: "13px" }}>50% Needs</strong>
                   <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
                     Food (30%) & Transit (20%)
                   </div>
                 </div>
-                <div style={{ padding: "12px", background: "rgba(245, 158, 11, 0.1)", borderRadius: "var(--radius-sm)", border: "1px solid rgba(245, 158, 11, 0.25)" }}>
+                <div style={{ padding: "12px", background: "var(--warning-bg)", borderRadius: "var(--radius-sm)", border: "1px solid var(--warning-border)" }}>
                   <strong style={{ color: "var(--warning)", fontSize: "13px" }}>30% Wants</strong>
                   <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
                     Shopping (15%) & Leisure (15%)
                   </div>
                 </div>
-                <div style={{ padding: "12px", background: "rgba(99, 102, 241, 0.1)", borderRadius: "var(--radius-sm)", border: "1px solid rgba(99, 102, 241, 0.25)" }}>
-                  <strong style={{ color: "var(--primary)", fontSize: "13px" }}>20% Sinking</strong>
+                <div style={{ padding: "12px", background: "var(--primary-subtle)", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-accent)" }}>
+                  <strong style={{ color: "var(--primary)", fontSize: "13px" }}>20% Savings</strong>
                   <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
                     Education (10%) & Emergency (10%)
                   </div>
@@ -485,7 +465,7 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
               </div>
 
               <div className="form-group">
-                <label>Monthly Allowance / Pocket Money Base (₹)</label>
+                <label>Monthly Allowance / Inflow Base (₹)</label>
                 <input
                   type="number"
                   className="form-control font-mono"
@@ -493,26 +473,26 @@ export default function BudgetsTab({ budgets, onRefresh, totalIncome = 0 }) {
                   id="smartBaseInput"
                 />
                 <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
-                  Pre-filled from your verified inflows (₹{money.format(totalIncome)}). You can customize the base.
+                  Pre-filled from your verified inflows (₹{money.format(totalIncome)}).
                 </span>
               </div>
 
               {error && <p style={{ color: "var(--danger)", fontSize: "13px" }}>{error}</p>}
             </div>
-            <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-subtle)", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-              <button type="button" className="btn btn-outline btn-interactive" onClick={() => setShowSmartModal(false)}>
+            <div style={{ padding: "16px 22px", borderTop: "1px solid var(--border-subtle)", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button type="button" className="btn btn-outline" onClick={() => setShowSmartModal(false)}>
                 Cancel
               </button>
               <button
                 type="button"
                 disabled={busy}
-                className="btn btn-primary btn-interactive"
+                className="btn btn-primary"
                 onClick={() => {
                   const inputVal = document.getElementById("smartBaseInput")?.value;
                   applySmartBudget(inputVal);
                 }}
               >
-                {busy ? "Applying Guardrails..." : "🚀 Auto-Generate & Apply All"}
+                {busy ? "Applying..." : "Auto-Generate & Apply"}
               </button>
             </div>
           </div>
