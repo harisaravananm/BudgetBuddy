@@ -1,4 +1,4 @@
-# 💰 BudgetBuddy — Full-Stack Personal Finance & Budget Management
+# ðŸ’° BudgetBuddy â€” Full-Stack Personal Finance & Budget Management
 
 <div align="center">
 
@@ -14,44 +14,44 @@
 
 **An intelligent, modern, full-stack personal finance application built to help individuals, students, and professionals track daily transactions, monitor category budgets, manage savings targets, and generate in-depth financial analytics and exportable reports.**
 
-[Features](#-key-features) • [Tech Stack](#-tech-stack) • [Database Architecture](#-database-architecture) • [Quick Start](#-quick-start-guide) • [Demo Credentials](#-demo-credentials--seed-data) • [API Reference](#-api-endpoints)
+[Features](#-key-features) â€¢ [Tech Stack](#-tech-stack) â€¢ [Database Architecture](#-database-architecture) â€¢ [Quick Start](#-quick-start-guide) â€¢ [Demo Credentials](#-demo-credentials--seed-data) â€¢ [API Reference](#-api-endpoints)
 
 </div>
 
 ---
 
-## 📌 Table of Contents
-- [✨ Key Features](#-key-features)
-- [🛠️ Tech Stack](#-tech-stack)
-- [🗄️ Database Architecture](#-database-architecture)
-- [📁 Project Structure](#-project-structure)
-- [🚀 Quick Start Guide](#-quick-start-guide)
-  - [⚡ Option 1: One-Click Launch (Windows)](#option-1-one-click-launch-windows)
-  - [🔧 Option 2: Step-by-Step Manual Setup](#option-2-step-by-step-manual-setup)
-- [🔐 Demo Credentials & Seed Data](#-demo-credentials--seed-data)
-- [📡 API Endpoints](#-api-endpoints)
-- [⚙️ Environment Variables](#️-environment-variables)
-- [📜 License](#-license)
+## ðŸ“Œ Table of Contents
+- [âœ¨ Key Features](#-key-features)
+- [ðŸ› ï¸ Tech Stack](#-tech-stack)
+- [ðŸ—„ï¸ Database Architecture](#-database-architecture)
+- [ðŸ“ Project Structure](#-project-structure)
+- [ðŸš€ Quick Start Guide](#-quick-start-guide)
+  - [âš¡ Option 1: One-Click Launch (Windows)](#option-1-one-click-launch-windows)
+  - [ðŸ”§ Option 2: Step-by-Step Manual Setup](#option-2-step-by-step-manual-setup)
+- [ðŸ” Demo Credentials & Seed Data](#-demo-credentials--seed-data)
+- [ðŸ“¡ API Endpoints](#-api-endpoints)
+- [âš™ï¸ Environment Variables](#ï¸-environment-variables)
+- [ðŸ“œ License](#-license)
 
 ---
 
-## ✨ Key Features
+## âœ¨ Key Features
 
 | Feature | Description |
 |---|---|
-| **📊 Smart Dashboard** | Real-time overview of Total Balance, Monthly Incomes, Expenses, Savings Rate, and Recent Transactions. |
-| **💳 Transaction Management** | Add, edit, filter, search, and delete categorized income sources and expense items with custom notes and dates. |
-| **🎯 Category Budgets & Alerts** | Set monthly spending limits per category (Food, Travel, Education, Shopping, Entertainment, etc.) with real-time threshold warnings (e.g. 80%). |
-| **🏆 Savings Goals** | Define target amounts and deadlines, track visual progress bars, and make quick deposits toward your financial goals. |
-| **📈 Visual Analytics** | Visual breakdowns of income streams, spending distributions, category-by-category charts, and net savings trends. |
-| **📑 Comprehensive Reports** | Generate monthly financial summaries and export data seamlessly to **CSV**, **Excel (.xlsx)**, and printable **PDF / HTML**. |
-| **🔔 In-App Notifications** | Automatic alert system notifying users of budget threshold breaches, overspending, savings reminders, and goal milestones. |
-| **🔒 Secure Authentication** | JSON Web Token (JWT) authentication with refresh tokens, password hashing, and Role-Based Access Control (**Student**, **Premium**, **Admin**). |
-| **🎨 Modern Glassmorphic UI** | Premium responsive interface crafted with CSS glassmorphism, fluid animations, dark theme, and mobile-friendly layouts. |
+| **ðŸ“Š Smart Dashboard** | Real-time overview of Total Balance, Monthly Incomes, Expenses, Savings Rate, and Recent Transactions. |
+| **ðŸ’³ Transaction Management** | Add, edit, filter, search, and delete categorized income sources and expense items with custom notes and dates. |
+| **ðŸŽ¯ Category Budgets & Alerts** | Set monthly spending limits per category (Food, Travel, Education, Shopping, Entertainment, etc.) with real-time threshold warnings (e.g. 80%). |
+| **ðŸ† Savings Goals** | Define target amounts and deadlines, track visual progress bars, and make quick deposits toward your financial goals. |
+| **ðŸ“ˆ Visual Analytics** | Visual breakdowns of income streams, spending distributions, category-by-category charts, and net savings trends. |
+| **ðŸ“‘ Comprehensive Reports** | Generate monthly financial summaries and export data seamlessly to **CSV**, **Excel (.xlsx)**, and printable **PDF / HTML**. |
+| **ðŸ”” In-App Notifications** | Automatic alert system notifying users of budget threshold breaches, overspending, savings reminders, and goal milestones. |
+| **ðŸ”’ Secure Authentication** | JSON Web Token (JWT) authentication with refresh tokens, password hashing, and Role-Based Access Control (**Student**, **Premium**, **Admin**). |
+| **ðŸŽ¨ Modern Glassmorphic UI** | Premium responsive interface crafted with CSS glassmorphism, fluid animations, dark theme, and mobile-friendly layouts. |
 
 ---
 
-## 🛠️ Tech Stack
+## ðŸ› ï¸ Tech Stack
 
 ### Frontend
 - **Library/Framework**: [React 18](https://react.dev/) (Single Page Application)
@@ -68,12 +68,12 @@
 - **Data Seeding**: Built-in Django management command (`python manage.py seed_data`) to populate mock data
 
 ### Database & Storage
-- **Development**: **SQLite 3** (`db.sqlite3`) — Out-of-the-box zero-configuration embedded database.
-- **Production**: **PostgreSQL** (`psycopg2-binary`) — Robust relational database support enabled via `.env` variables.
+- **Development**: **SQLite 3** (`db.sqlite3`) â€” Out-of-the-box zero-configuration embedded database.
+- **Production**: **PostgreSQL** (`psycopg2-binary`) â€” Robust relational database support enabled via `.env` variables.
 
 ---
 
-## 🗄️ Database Architecture
+## ðŸ—„ï¸ Database Architecture
 
 BudgetBuddy utilizes an enterprise-grade relational database schema managed through Django's ORM:
 
@@ -159,40 +159,40 @@ erDiagram
 
 ---
 
-## 📁 Project Structure
+## ðŸ“ Project Structure
 
 ```text
 budgetbuddy/
-├── budgetbuddy_backend/         # Django REST Framework API
-│   ├── config/                  # Django project root settings, URLs, WSGI/ASGI
-│   ├── finance/                 # Incomes, Expenses, Budgets, Goals, Analytics
-│   │   └── management/commands/ # seed_data.py command
-│   ├── notifications/           # In-app notifications & alert models/views
-│   ├── reports/                 # Financial reports, CSV/Excel/PDF export views
-│   ├── users/                   # Custom User model, Profile, JWT auth views
-│   ├── manage.py                # Django CLI utility
-│   ├── requirements.txt         # Python backend dependencies
-│   └── .env.example             # Backend environment template
-├── frontend/                    # React 18 + Vite Web Application
-│   ├── src/
-│   │   ├── components/          # Dashboard, Transactions, Budgets, Goals, Analytics, Reports, Settings
-│   │   ├── App.jsx              # Main app shell & routing
-│   │   ├── api.js               # Centralized API service with JWT authentication
-│   │   ├── main.jsx             # React DOM entry point
-│   │   └── styles.css           # Glassmorphism design system & responsive styling
-│   ├── index.html               # Frontend HTML root template
-│   ├── package.json             # NPM dependencies & scripts
-│   ├── vite.config.js           # Vite dev server configuration
-│   └── .env.example             # Frontend environment template
-├── start_dev.bat                # 1-Click launcher for Windows Command Prompt
-├── start_dev.ps1                # 1-Click launcher for Windows PowerShell
-├── .gitignore                   # Monorepo git exclusion rules
-└── README.md                    # Project documentation
+â”œâ”€â”€ budgetbuddy_backend/         # Django REST Framework API
+â”‚   â”œâ”€â”€ config/                  # Django project root settings, URLs, WSGI/ASGI
+â”‚   â”œâ”€â”€ finance/                 # Incomes, Expenses, Budgets, Goals, Analytics
+â”‚   â”‚   â””â”€â”€ management/commands/ # seed_data.py command
+â”‚   â”œâ”€â”€ notifications/           # In-app notifications & alert models/views
+â”‚   â”œâ”€â”€ reports/                 # Financial reports, CSV/Excel/PDF export views
+â”‚   â”œâ”€â”€ users/                   # Custom User model, Profile, JWT auth views
+â”‚   â”œâ”€â”€ manage.py                # Django CLI utility
+â”‚   â”œâ”€â”€ requirements.txt         # Python backend dependencies
+â”‚   â””â”€â”€ .env.example             # Backend environment template
+â”œâ”€â”€ frontend/                    # React 18 + Vite Web Application
+â”‚   â”œâ”€â”€ src/
+â”‚   â”‚   â”œâ”€â”€ components/          # Dashboard, Transactions, Budgets, Goals, Analytics, Reports, Settings
+â”‚   â”‚   â”œâ”€â”€ App.jsx              # Main app shell & routing
+â”‚   â”‚   â”œâ”€â”€ api.js               # Centralized API service with JWT authentication
+â”‚   â”‚   â”œâ”€â”€ main.jsx             # React DOM entry point
+â”‚   â”‚   â””â”€â”€ styles.css           # Glassmorphism design system & responsive styling
+â”‚   â”œâ”€â”€ index.html               # Frontend HTML root template
+â”‚   â”œâ”€â”€ package.json             # NPM dependencies & scripts
+â”‚   â”œâ”€â”€ vite.config.js           # Vite dev server configuration
+â”‚   â””â”€â”€ .env.example             # Frontend environment template
+â”œâ”€â”€ start_dev.bat                # 1-Click launcher for Windows Command Prompt
+â”œâ”€â”€ start_dev.ps1                # 1-Click launcher for Windows PowerShell
+â”œâ”€â”€ .gitignore                   # Monorepo git exclusion rules
+â””â”€â”€ README.md                    # Project documentation
 ```
 
 ---
 
-## 🚀 Quick Start Guide
+## ðŸš€ Quick Start Guide
 
 ### Prerequisites
 Make sure you have the following installed on your machine:
@@ -293,23 +293,23 @@ This launches the Django API at `http://127.0.0.1:8000/` and opens the React web
 
 ---
 
-## 🔐 Demo Credentials & Seed Data
+## ðŸ” Demo Credentials & Seed Data
 
 When you run `python manage.py seed_data`, the following pre-configured test accounts are created with rich transaction and budget records:
 
 | Role | Email | Password | Description |
 |---|---|---|---|
-| **🎓 Student** | `student@budgetbuddy.local` | `Student123!` | Student budget, pocket money & freelance income, active savings goals |
-| **⭐ Premium** | `premium@budgetbuddy.local` | `Premium123!` | Higher income, multi-category budgets, investment targets |
-| **🛡️ Admin** | `admin@budgetbuddy.local` | `Admin123!` | Superuser with full access to Django Admin (`/admin/`) |
+| **ðŸŽ“ Student** | `student@budgetbuddy.local` | `Student123!` | Student budget, pocket money & freelance income, active savings goals |
+| **â­ Premium** | `premium@budgetbuddy.local` | `Premium123!` | Higher income, multi-category budgets, investment targets |
+| **ðŸ›¡ï¸ Admin** | `admin@budgetbuddy.local` | `Admin123!` | Superuser with full access to Django Admin (`/admin/`) |
 
 ---
 
-## 📡 API Endpoints
+## ðŸ“¡ API Endpoints
 
 All API endpoints are prefixed with `/api/`. Protected endpoints require a Bearer JWT Token in the request header (`Authorization: Bearer <access_token>`).
 
-### 🔑 Authentication (`/api/auth/`)
+### ðŸ”‘ Authentication (`/api/auth/`)
 | Endpoint | Method | Auth | Description |
 |---|---|---|---|
 | `/api/auth/register/` | `POST` | Public | Register a new user account |
@@ -317,7 +317,7 @@ All API endpoints are prefixed with `/api/`. Protected endpoints require a Beare
 | `/api/auth/refresh/` | `POST` | Public | Obtain a new access token using refresh token |
 | `/api/auth/me/` | `GET` / `PATCH` | Bearer | Get or update current user profile & preferences |
 
-### 💵 Finance Management (`/api/finance/`)
+### ðŸ’µ Finance Management (`/api/finance/`)
 | Endpoint | Method | Auth | Description |
 |---|---|---|---|
 | `/api/finance/incomes/` | `GET`, `POST` | Bearer | List or create income records |
@@ -329,14 +329,14 @@ All API endpoints are prefixed with `/api/`. Protected endpoints require a Beare
 | `/api/finance/goals/<id>/deposit/` | `POST` | Bearer | Deposit funds into an active savings goal |
 | `/api/finance/analytics/` | `GET` | Bearer | Get aggregated financial metrics & category breakdown |
 
-### 🔔 Notifications (`/api/notifications/`)
+### ðŸ”” Notifications (`/api/notifications/`)
 | Endpoint | Method | Auth | Description |
 |---|---|---|---|
 | `/api/notifications/` | `GET` | Bearer | Retrieve user notifications & unread alerts |
 | `/api/notifications/<id>/read/` | `POST` | Bearer | Mark a notification as read |
 | `/api/notifications/read-all/` | `POST` | Bearer | Mark all notifications as read |
 
-### 📊 Reports & Exports (`/api/reports/`)
+### ðŸ“Š Reports & Exports (`/api/reports/`)
 | Endpoint | Method | Auth | Description |
 |---|---|---|---|
 | `/api/reports/summary/?month=YYYY-MM` | `GET` | Bearer | Monthly financial summary breakdown |
@@ -346,7 +346,7 @@ All API endpoints are prefixed with `/api/`. Protected endpoints require a Beare
 
 ---
 
-## ⚙️ Environment Variables
+## âš™ï¸ Environment Variables
 
 ### Backend (`budgetbuddy_backend/.env`)
 ```ini
@@ -374,7 +374,7 @@ VITE_API_URL=http://127.0.0.1:8000
 
 ---
 
-## 🧪 Testing
+## ðŸ§ª Testing
 
 Run backend automated tests using Django's test runner:
 ```bash
@@ -384,7 +384,7 @@ python manage.py test
 
 ---
 
-## 🤝 Contributing
+## ðŸ¤ Contributing
 
 Contributions, issues, and feature requests are welcome!
 1. Fork the Project
@@ -395,10 +395,10 @@ Contributions, issues, and feature requests are welcome!
 
 ---
 
-## 📜 License
+## ðŸ“œ License
 
 Distributed under the **MIT License**. See `LICENSE` for more information.
 
 <div align="center">
-  <sub>Built with ❤️ by <a href="https://github.com/harisaravananm">Hari Saravanan M</a></sub>
+  <sub>Built with â¤ï¸ by <a href="https://github.com/harisaravananm">Hari Saravanan M</a></sub>
 </div>
