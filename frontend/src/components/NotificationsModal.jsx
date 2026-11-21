@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { notificationsApi } from "../api";
+import { isEmailJSConfigured, sendEmailJSNotification } from "../utils/emailjsService";
+import { useAuth } from "../auth/AuthContext";
 
 export default function NotificationsModal({
   isOpen,
@@ -8,7 +10,9 @@ export default function NotificationsModal({
   unreadCount,
   onRefresh,
 }) {
+  const { user } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [emailStatus, setEmailStatus] = useState("");
 
   if (!isOpen) return null;
 
@@ -34,7 +38,7 @@ export default function NotificationsModal({
     setBusy(true);
     try {
       await notificationsApi.triggerTestAlert(
-        "savings_reminder",
+        "system",
         "Student Money Habit 💡",
         "Tip: Follow the 50/30/20 rule: 50% needs, 30% wants, 20% savings. Check your active goals today!"
       );
@@ -43,6 +47,32 @@ export default function NotificationsModal({
       console.error(e);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleTestEmailJSAlert() {
+    if (!isEmailJSConfigured()) {
+      setEmailStatus("⚠️ EmailJS is not configured. Add VITE_EMAILJS_* keys in frontend/.env");
+      setTimeout(() => setEmailStatus(""), 5000);
+      return;
+    }
+    const targetEmail = user?.email || "user@example.com";
+    setBusy(true);
+    setEmailStatus("Sending EmailJS alert...");
+    try {
+      await sendEmailJSNotification({
+        toEmail: targetEmail,
+        toName: user?.profile?.full_name || "Student",
+        subject: "🔔 BudgetBuddy: Live Notification Alert",
+        message: "This is a direct real-time notification alert dispatched from your BudgetBuddy dashboard via EmailJS!",
+        alertType: "Dashboard Alert",
+      });
+      setEmailStatus(`✅ Email sent to ${targetEmail}!`);
+    } catch (err) {
+      setEmailStatus(`❌ EmailJS Error: ${err.message}`);
+    } finally {
+      setBusy(false);
+      setTimeout(() => setEmailStatus(""), 6000);
     }
   }
 
@@ -76,22 +106,38 @@ export default function NotificationsModal({
           <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button>
         </div>
 
-        <div style={{ padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border-subtle)", background: "rgba(0,0,0,0.15)" }}>
+        <div style={{ padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border-subtle)", background: "rgba(0,0,0,0.15)", gap: "8px", flexWrap: "wrap" }}>
           <button
             className="btn btn-outline btn-sm"
             disabled={busy || unreadCount === 0}
             onClick={handleMarkAllRead}
           >
-            Mark all as read
+            Mark all read
           </button>
-          <button
-            className="btn btn-primary btn-sm"
-            disabled={busy}
-            onClick={handleTriggerTestTip}
-          >
-            + Test Alert Tip
-          </button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              className="btn btn-outline btn-sm"
+              disabled={busy}
+              onClick={handleTestEmailJSAlert}
+              title="Send a real-time test notification directly to your email via EmailJS"
+            >
+              ✉️ Test EmailJS
+            </button>
+            <button
+              className="btn btn-primary btn-sm"
+              disabled={busy}
+              onClick={handleTriggerTestTip}
+            >
+              + Test Alert Tip
+            </button>
+          </div>
         </div>
+
+        {emailStatus && (
+          <div style={{ padding: "8px 24px", background: "var(--bg-muted)", borderBottom: "1px solid var(--border-subtle)", fontSize: "12px", color: emailStatus.startsWith("❌") ? "var(--danger)" : "var(--success)", fontWeight: "600" }}>
+            {emailStatus}
+          </div>
+        )}
 
         <div
           className="modal-body"

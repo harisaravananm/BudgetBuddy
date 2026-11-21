@@ -7,10 +7,16 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    authApi.refresh().then((tokens) => {
-      setAccessToken(tokens.access);
-      return authApi.getMe();
-    }).then(setUser).catch(() => clearAccessToken()).finally(() => setLoading(false));
+    authApi.getMe()
+      .then(setUser)
+      .catch(() => {
+        return authApi.refresh().then(() => authApi.getMe()).then(setUser);
+      })
+      .catch(() => {
+        clearAccessToken();
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const authenticate = async (email, password) => {

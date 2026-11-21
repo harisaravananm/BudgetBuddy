@@ -5,7 +5,7 @@ from .models import Report
 class ReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Report
-        fields = ("id", "month", "format", "file", "created_at")
+        fields = ("id", "type", "month", "period", "format", "file", "created_at")
         read_only_fields = ("id", "file", "created_at")
 
     def create(self, validated_data):

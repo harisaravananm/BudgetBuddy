@@ -1,147 +1,178 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+import axios from "axios";
+
+export const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+let accessToken = localStorage.getItem("budgetbuddy_access") || null;
+let refreshPromise = null;
+
+export function setAccessToken(token) {
+  accessToken = token || null;
+  if (token) {
+    localStorage.setItem("budgetbuddy_access", token);
+  } else {
+    localStorage.removeItem("budgetbuddy_access");
+  }
+}
+
+export function setRefreshToken(token) {
+  if (token) {
+    localStorage.setItem("budgetbuddy_refresh", token);
+  } else {
+    localStorage.removeItem("budgetbuddy_refresh");
+  }
+}
+
+export function getRefreshToken() {
+  return localStorage.getItem("budgetbuddy_refresh") || "";
+}
+
+export function clearAccessToken() {
+  accessToken = null;
+  localStorage.removeItem("budgetbuddy_access");
+  localStorage.removeItem("budgetbuddy_refresh");
+}
+
+export const api = axios.create({
+  baseURL: API_URL,
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
+});
+
+api.interceptors.request.use((config) => {
+  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const original = error.config;
+    if (error.response?.status !== 401 || original?._retry || original?.url?.includes("/auth/refresh/")) {
+      return Promise.reject(error);
+    }
+    original._retry = true;
+    try {
+      const storedRefresh = getRefreshToken();
+      refreshPromise ||= api.post("/api/auth/refresh/", storedRefresh ? { refresh: storedRefresh } : {});
+      const response = await refreshPromise;
+      refreshPromise = null;
+      setAccessToken(response.data.access);
+      if (response.data.refresh) setRefreshToken(response.data.refresh);
+      original.headers.Authorization = `Bearer ${response.data.access}`;
+      return api(original);
+    } catch (refreshError) {
+      refreshPromise = null;
+      clearAccessToken();
+      window.location.assign("/login");
+      return Promise.reject(refreshError);
+    }
+  },
+);
 
 export async function apiRequest(path, options = {}) {
-  const token = localStorage.getItem("budgetbuddy_access");
-  const headers = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...options.headers,
-  };
-
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  });
-
-  if (response.status === 204) return null;
-
-  // Handle file or non-json responses if requested
-  const contentType = response.headers.get("content-type") || "";
-  if (contentType.includes("text/csv") || contentType.includes("application/vnd.ms-excel")) {
-    return response.blob();
-  }
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    let msg = "Request failed.";
-    if (typeof data === "object") {
-      msg = Object.entries(data)
-        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
-        .join(" | ");
-    }
-    throw new Error(msg || `Error ${response.status}`);
-  }
-
-  return data;
+  const response = await api.request({ url: path, ...options, data: options.body });
+  return response.data;
 }
 
 export const authApi = {
-  login: (email, password) =>
-    apiRequest("/api/auth/login/", {
+  login: async (email, password) => {
+    const data = await apiRequest("/api/auth/login/", { method: "POST", body: { email, password } });
+    if (data.access) setAccessToken(data.access);
+    if (data.refresh) setRefreshToken(data.refresh);
+    return data;
+  },
+  register: async (email, password, full_name) => {
+    const data = await apiRequest("/api/auth/register/", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
-    }),
-  register: (email, password, full_name) =>
-    apiRequest("/api/auth/register/", {
+      body: { email: email.trim().toLowerCase(), password, full_name: full_name.trim() },
+    });
+    if (data.access) setAccessToken(data.access);
+    if (data.refresh) setRefreshToken(data.refresh);
+    return data;
+  },
+  refresh: async () => {
+    const storedRefresh = getRefreshToken();
+    const data = await apiRequest("/api/auth/refresh/", {
       method: "POST",
-      body: JSON.stringify({ email, password, full_name }),
-    }),
-  oauthLogin: (provider, email, name) =>
-    apiRequest("/api/auth/oauth/", {
-      method: "POST",
-      body: JSON.stringify({ provider, email, name }),
-    }),
+      body: storedRefresh ? { refresh: storedRefresh } : {},
+    });
+    if (data.access) setAccessToken(data.access);
+    if (data.refresh) setRefreshToken(data.refresh);
+    return data;
+  },
+  oauthExchange: async (provider, code, redirect_uri) => {
+    const data = await apiRequest(`/api/auth/${provider}/`, { method: "POST", body: { code, redirect_uri } });
+    if (data.access) setAccessToken(data.access);
+    if (data.refresh) setRefreshToken(data.refresh);
+    return data;
+  },
   getMe: () => apiRequest("/api/auth/me/"),
-  updateProfile: (profileData, role = null) =>
-    apiRequest("/api/auth/me/", {
-      method: "PATCH",
-      body: JSON.stringify({
-        profile: profileData,
-        ...(role ? { role } : {}),
-      }),
-    }),
-  upgradeRole: (role) =>
-    apiRequest("/api/auth/upgrade/", {
-      method: "POST",
-      body: JSON.stringify({ role }),
-    }),
+  logout: async () => {
+    try {
+      const storedRefresh = getRefreshToken();
+      await apiRequest("/api/auth/logout/", {
+        method: "POST",
+        body: storedRefresh ? { refresh: storedRefresh } : {},
+      });
+    } finally {
+      clearAccessToken();
+    }
+  },
+  updateProfile: (profileData, role = null) => apiRequest("/api/auth/me/", { method: "PATCH", body: { profile: profileData, ...(role ? { role } : {}) } }),
+  upgradeRole: (role) => apiRequest("/api/auth/upgrade/", { method: "POST", body: { role } }),
   getAdminUsers: () => apiRequest("/api/auth/admin/users/"),
+  sendVerificationOtp: (email = "") => apiRequest("/api/auth/send-verification-otp/", { method: "POST", body: { email } }),
+  verifyEmailOtp: (code, email = "") => apiRequest("/api/auth/verify-email-otp/", { method: "POST", body: { code, email } }),
+  requestPasswordResetOtp: (email) => apiRequest("/api/auth/password-reset/request-otp/", { method: "POST", body: { email } }),
+  verifyPasswordResetOtp: (email, code, new_password) => apiRequest("/api/auth/password-reset/verify-otp/", {
+    method: "POST",
+    body: { email: email.trim().toLowerCase(), code: code.trim(), new_password },
+  }),
 };
+
+const resource = (name) => ({
+  [`get${name}`]: (params = "") => apiRequest(`/api/finance/${name.toLowerCase()}/${params}`),
+});
 
 export const financeApi = {
   getIncomes: (params = "") => apiRequest(`/api/finance/incomes/${params}`),
-  createIncome: (data) =>
-    apiRequest("/api/finance/incomes/", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  deleteIncome: (id) =>
-    apiRequest(`/api/finance/incomes/${id}/`, { method: "DELETE" }),
-
+  createIncome: (data) => apiRequest("/api/finance/incomes/", { method: "POST", body: data }),
+  updateIncome: (id, data) => apiRequest(`/api/finance/incomes/${id}/`, { method: "PATCH", body: data }),
+  deleteIncome: (id) => apiRequest(`/api/finance/incomes/${id}/`, { method: "DELETE" }),
   getExpenses: (params = "") => apiRequest(`/api/finance/expenses/${params}`),
-  createExpense: (data) =>
-    apiRequest("/api/finance/expenses/", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  deleteExpense: (id) =>
-    apiRequest(`/api/finance/expenses/${id}/`, { method: "DELETE" }),
-
+  createExpense: (data) => apiRequest("/api/finance/expenses/", { method: "POST", body: data }),
+  updateExpense: (id, data) => apiRequest(`/api/finance/expenses/${id}/`, { method: "PATCH", body: data }),
+  deleteExpense: (id) => apiRequest(`/api/finance/expenses/${id}/`, { method: "DELETE" }),
   getBudgets: (params = "") => apiRequest(`/api/finance/budgets/${params}`),
-  createBudget: (data) =>
-    apiRequest("/api/finance/budgets/", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  deleteBudget: (id) =>
-    apiRequest(`/api/finance/budgets/${id}/`, { method: "DELETE" }),
-
+  createBudget: (data) => apiRequest("/api/finance/budgets/", { method: "POST", body: data }),
+  updateBudget: (id, data) => apiRequest(`/api/finance/budgets/${id}/`, { method: "PATCH", body: data }),
+  deleteBudget: (id) => apiRequest(`/api/finance/budgets/${id}/`, { method: "DELETE" }),
   getGoals: () => apiRequest("/api/finance/goals/"),
-  createGoal: (data) =>
-    apiRequest("/api/finance/goals/", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  depositGoal: (id, amount) =>
-    apiRequest(`/api/finance/goals/${id}/deposit/`, {
-      method: "POST",
-      body: JSON.stringify({ amount }),
-    }),
-  withdrawGoal: (id, amount) =>
-    apiRequest(`/api/finance/goals/${id}/withdraw/`, {
-      method: "POST",
-      body: JSON.stringify({ amount }),
-    }),
-  deleteGoal: (id) =>
-    apiRequest(`/api/finance/goals/${id}/`, { method: "DELETE" }),
-
-  getAnalytics: (month = "") =>
-    apiRequest(`/api/finance/analytics/${month ? `?month=${month}` : ""}`),
+  createGoal: (data) => apiRequest("/api/finance/goals/", { method: "POST", body: data }),
+  depositGoal: (id, amount) => apiRequest(`/api/finance/goals/${id}/contribute/`, { method: "POST", body: { amount, date: new Date().toISOString().slice(0, 10) } }),
+  withdrawGoal: (id, amount) => apiRequest(`/api/finance/goals/${id}/withdraw/`, { method: "POST", body: { amount } }),
+  deleteGoal: (id) => apiRequest(`/api/finance/goals/${id}/`, { method: "DELETE" }),
+  getAnalytics: (month = "") => apiRequest(`/api/finance/analytics/${month ? `?month=${month}` : ""}`),
+  getDashboardSummary: () => apiRequest("/api/dashboard/summary/"),
 };
 
 export const notificationsApi = {
-  getNotifications: () => apiRequest("/api/notifications/"),
-  markRead: (id) =>
-    apiRequest(`/api/notifications/${id}/mark_read/`, { method: "POST" }),
-  markAllRead: () =>
-    apiRequest("/api/notifications/mark_all_read/", { method: "POST" }),
-  deleteNotification: (id) =>
-    apiRequest(`/api/notifications/${id}/`, { method: "DELETE" }),
-  triggerTestAlert: (type, title, message) =>
-    apiRequest("/api/notifications/trigger_test_alert/", {
-      method: "POST",
-      body: JSON.stringify({ type, title, message }),
-    }),
+  getNotifications: (params = "") => apiRequest(`/api/notifications/${params}`),
+  getUnreadCount: () => apiRequest("/api/notifications/unread-count/"),
+  markRead: (id) => apiRequest(`/api/notifications/${id}/read/`, { method: "PATCH" }),
+  markAllRead: () => apiRequest("/api/notifications/mark_all_read/", { method: "POST" }),
+  deleteNotification: (id) => apiRequest(`/api/notifications/${id}/`, { method: "DELETE" }),
+  triggerTestAlert: (type, title, message) => apiRequest("/api/notifications/trigger_test_alert/", { method: "POST", body: { type, title, message } }),
+  getSettings: () => apiRequest("/api/notifications/settings/"),
+  updateSettings: (data) => apiRequest("/api/notifications/settings/", { method: "PATCH", body: data }),
+  sendTestEmail: (email = "") => apiRequest("/api/notifications/send-test-email/", { method: "POST", body: { email } }),
 };
 
 export const reportsApi = {
-  getSummary: (month = "") =>
-    apiRequest(`/api/reports/summary/${month ? `?month=${month}` : ""}`),
-  getCsvUrl: (month = "") =>
-    `${API_URL}/api/reports/export-csv/${month ? `?month=${month}` : ""}`,
-  getExcelUrl: (month = "") =>
-    `${API_URL}/api/reports/export-excel/${month ? `?month=${month}` : ""}`,
-  getPdfUrl: (month = "") =>
-    `${API_URL}/api/reports/export-pdf/${month ? `?month=${month}` : ""}`,
+  getSummary: (month = "") => apiRequest(`/api/reports/summary/${month ? `?month=${month}` : ""}`),
+  getCsvUrl: (month = "") => `${API_URL}/api/reports/export-csv/${month ? `?month=${month}` : ""}`,
+  getExcelUrl: (month = "") => `${API_URL}/api/reports/export-excel/${month ? `?month=${month}` : ""}`,
+  getPdfUrl: (month = "") => `${API_URL}/api/reports/export-pdf/${month ? `?month=${month}` : ""}`,
+  generate: (data) => apiRequest("/api/reports/generate/", { method: "POST", body: data }),
+  history: () => apiRequest("/api/reports/history/"),
 };

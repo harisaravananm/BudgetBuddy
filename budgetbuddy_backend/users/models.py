@@ -34,6 +34,13 @@ class User(AbstractUser):
     username = None
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.STUDENT)
+    auth_provider = models.CharField(max_length=20, default="email")
+    avatar_url = models.URLField(max_length=500, blank=True, default="")
+    is_email_verified = models.BooleanField(default=False)
+    email_verification_code = models.CharField(max_length=6, blank=True, default="")
+    email_verification_expires_at = models.DateTimeField(null=True, blank=True)
+    password_reset_code = models.CharField(max_length=6, blank=True, default="")
+    password_reset_expires_at = models.DateTimeField(null=True, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -50,6 +57,11 @@ class Profile(models.Model):
     currency = models.CharField(max_length=3, default="INR")
     savings_target_percent = models.PositiveSmallIntegerField(default=20)
     notifications_enabled = models.BooleanField(default=True)
+    alert_threshold_percent = models.PositiveSmallIntegerField(default=80)
+    email_notifications_enabled = models.BooleanField(default=True)
+    large_expense_alert_enabled = models.BooleanField(default=True)
+    large_expense_threshold = models.DecimalField(max_digits=12, decimal_places=2, default=5000.00)
+    alert_preferences = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

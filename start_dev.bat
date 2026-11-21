@@ -11,7 +11,7 @@ start "BudgetBuddy Backend (Port 8000)" cmd /k "cd /d ""%~dp0budgetbuddy_backend
 
 :: 2. Start React/Vite Frontend Server on Port 5173
 echo [2/2] Starting React Vite Frontend on http://127.0.0.1:5173/ ...
-start "BudgetBuddy Frontend (Port 5173)" cmd /k "cd /d ""%~dp0frontend"" && npm run dev"
+start "BudgetBuddy Frontend (Port 5173)" cmd /k "set PATH=C:\Program Files\nodejs;%%PATH%% && cd /d ""%~dp0frontend"" && npm run dev"
 
 echo.
 echo ========================================================

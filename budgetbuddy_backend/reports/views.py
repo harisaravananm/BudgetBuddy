@@ -7,6 +7,10 @@ from django.http import HttpResponse
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.decorators import action
+from django.core.files.base import ContentFile
+from django.db.models.functions import TruncMonth
+from notifications.models import Notification
 
 from finance.models import Budget, Category, Expense, Income, SavingsGoal
 from .models import Report
@@ -320,3 +324,84 @@ class ReportViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Report.objects.filter(user=self.request.user)
+
+    @action(detail=True, methods=["get"])
+    def download(self, request, pk=None):
+        report = self.get_object()
+        if not report.file:
+            return Response({"detail": "Report file is unavailable."}, status=status.HTTP_404_NOT_FOUND)
+        response = HttpResponse(report.file.open("rb").read(), content_type={
+            "pdf": "application/pdf", "csv": "text/csv", "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        }[report.format])
+        response["Content-Disposition"] = f'attachment; filename="budgetbuddy_report_{report.id}.{report.format}"'
+        return response
+
+
+class GenerateReportView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        report_type = request.data.get("type", "monthly")
+        output_format = request.data.get("format", "pdf")
+        if report_type not in ("monthly", "custom") or output_format not in ("pdf", "csv", "xlsx"):
+            return Response({"detail": "type must be monthly/custom and format must be pdf/csv/xlsx."}, status=400)
+        try:
+            end = datetime.strptime(request.data.get("to"), "%Y-%m-%d").date() if request.data.get("to") else date.today()
+            start = datetime.strptime(request.data.get("from"), "%Y-%m-%d").date() if request.data.get("from") else end.replace(day=1)
+        except ValueError:
+            return Response({"detail": "from and to must use YYYY-MM-DD."}, status=400)
+        if start > end:
+            return Response({"detail": "from must not be after to."}, status=400)
+        user = request.user
+        incomes = list(Income.objects.filter(user=user, date__range=(start, end)))
+        expenses = list(Expense.objects.filter(user=user, date__range=(start, end)))
+        total_income = sum((x.amount for x in incomes), Decimal("0"))
+        total_expense = sum((x.amount for x in expenses), Decimal("0"))
+        rows = [["Type", "Date", "Category/Source", "Amount", "Note"]]
+        rows += [["Income", x.date.isoformat(), x.get_source_display(), f"{x.amount:.2f}", x.note] for x in incomes]
+        rows += [["Expense", x.date.isoformat(), x.get_category_display(), f"{x.amount:.2f}", x.note] for x in expenses]
+        content_type = "text/csv"
+        if output_format == "csv":
+            stream = io.StringIO()
+            csv.writer(stream).writerows(rows)
+            payload = stream.getvalue().encode()
+        elif output_format == "xlsx":
+            from openpyxl import Workbook
+            workbook = Workbook()
+            sheet = workbook.active
+            for row in rows:
+                sheet.append(row)
+            stream = io.BytesIO()
+            workbook.save(stream)
+            payload, content_type = stream.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        else:
+            from reportlab.lib.pagesizes import A4
+            from reportlab.pdfgen import canvas
+            stream = io.BytesIO()
+            pdf = canvas.Canvas(stream, pagesize=A4)
+            y = 800
+            pdf.setFont("Helvetica-Bold", 16)
+            pdf.drawString(40, y, "BudgetBuddy Financial Report")
+            y -= 28
+            pdf.setFont("Helvetica", 11)
+            for label, value in (("Period", f"{start} to {end}"), ("Income", total_income), ("Expenses", total_expense), ("Net savings", total_income - total_expense)):
+                pdf.drawString(40, y, f"{label}: {value}")
+                y -= 18
+            y -= 10
+            for row in rows[1:]:
+                pdf.drawString(40, y, " | ".join(str(value)[:45] for value in row))
+                y -= 14
+                if y < 40:
+                    pdf.showPage()
+                    y = 800
+            pdf.save()
+            payload, content_type = stream.getvalue(), "application/pdf"
+        report = Report.objects.create(user=user, type=report_type, month=start.replace(day=1),
+                                       period=f"{start}:{end}", format=output_format)
+        report.file.save(f"report_{report.id}.{output_format}", ContentFile(payload), save=True)
+        Notification.objects.create(user=user, type=Notification.Type.REPORT_READY,
+                                    title="Report ready", message=f"Your {output_format.upper()} report is ready.",
+                                    related_object=f"report:{report.id}")
+        response = HttpResponse(payload, content_type=content_type)
+        response["Content-Disposition"] = f'attachment; filename="budgetbuddy_report_{start}_{end}.{output_format}"'
+        return response

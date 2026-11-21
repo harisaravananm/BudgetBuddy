@@ -45,9 +45,60 @@ class AuthTests(APITestCase):
 
     def test_refresh(self):
         self.register()
-        ref = self.login().data["refresh"]
-        self.assertEqual(self.client.post("/api/auth/refresh/", {"refresh": ref}).status_code, 200)
+        response = self.login()
+        self.assertNotIn("refresh", response.data)
+        self.assertEqual(
+            self.client.post("/api/auth/refresh/").status_code,
+            200,
+        )
 
     def test_weak_password_rejected(self):
         r = self.client.post(REG, {"email": "w@w.com", "password": "123"})
         self.assertEqual(r.status_code, 400)
+
+    def test_send_and_verify_email_otp(self):
+        self.register("verify@student.com")
+        user = User.objects.get(email="verify@student.com")
+        self.assertFalse(user.is_email_verified)
+
+        # 1. Request OTP
+        res = self.client.post("/api/auth/send-verification-otp/", {"email": "verify@student.com"})
+        self.assertEqual(res.status_code, 200)
+        user.refresh_from_db()
+        self.assertTrue(user.email_verification_code)
+
+        # 2. Verify with wrong code
+        fail_res = self.client.post("/api/auth/verify-email-otp/", {"email": "verify@student.com", "code": "000000"})
+        self.assertEqual(fail_res.status_code, 400)
+
+        # 3. Verify with valid code
+        ok_res = self.client.post("/api/auth/verify-email-otp/", {"email": "verify@student.com", "code": user.email_verification_code})
+        self.assertEqual(ok_res.status_code, 200)
+        user.refresh_from_db()
+        self.assertTrue(user.is_email_verified)
+        self.assertEqual(user.email_verification_code, "")
+
+    def test_password_reset_flow(self):
+        self.register("reset@student.com")
+        user = User.objects.get(email="reset@student.com")
+
+        # 1. Request password reset
+        req_res = self.client.post("/api/auth/password-reset/request-otp/", {"email": "reset@student.com"})
+        self.assertEqual(req_res.status_code, 200)
+        user.refresh_from_db()
+        otp = user.password_reset_code
+        self.assertTrue(otp)
+
+        # 2. Reset with new password
+        new_pw = "BrandNew#SecurePass2026!"
+        verify_res = self.client.post("/api/auth/password-reset/verify-otp/", {
+            "email": "reset@student.com",
+            "code": otp,
+            "new_password": new_pw,
+        })
+        self.assertEqual(verify_res.status_code, 200)
+
+        # 3. Verify login works with new password
+        login_res = self.client.post(LOGIN, {"email": "reset@student.com", "password": new_pw})
+        self.assertEqual(login_res.status_code, 200)
+

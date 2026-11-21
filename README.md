@@ -40,14 +40,18 @@
 | Feature | Description |
 |---|---|
 | **📊 Smart Dashboard** | Real-time overview of Total Balance, Monthly Incomes, Expenses, Savings Rate, and Recent Transactions. |
-| **💳 Transaction Management** | Add, edit, filter, search, and delete categorized income sources and expense items with custom notes and dates. |
-| **🎯 Category Budgets & Alerts** | Set monthly spending limits per category (Food, Travel, Education, Shopping, Entertainment, etc.) with real-time threshold warnings (e.g. 80%). |
+| **💳 Transaction Management (Milestone 2)** | Full CRUD for categorized expenses & incomes, daily timeline history, and smart search & category filters. |
+| **📉 Percentage-First Spending Display (User Mandate)** | Money spent displayed primarily as **Percentages (%)** to optimize student behavioral discipline and avoid loss aversion bias. |
+| **🎯 Category Budgets & Alerts (Milestone 2)** | Set monthly spending limits per category (Food, Travel, Education, Shopping, Entertainment, Misc) with real-time threshold warnings and overspending alerts. |
+| **⚡ 50/30/20 Smart Budget Generator (Innovation)** | One-click algorithmic student budget generator distributing pocket money into 50% Needs, 30% Wants, 20% Growth. |
+| **🚀 Spending Velocity & Burn Meter (Innovation)** | Speedometer calculating calendar days elapsed vs % allowance consumed to prevent running dry mid-month. |
 | **🏆 Savings Goals** | Define target amounts and deadlines, track visual progress bars, and make quick deposits toward your financial goals. |
 | **📈 Visual Analytics** | Visual breakdowns of income streams, spending distributions, category-by-category charts, and net savings trends. |
 | **📑 Comprehensive Reports** | Generate monthly financial summaries and export data seamlessly to **CSV**, **Excel (.xlsx)**, and printable **PDF / HTML**. |
-| **🔔 In-App Notifications** | Automatic alert system notifying users of budget threshold breaches, overspending, savings reminders, and goal milestones. |
+| **🔔 Real-Time Email & In-App Notifications** | Automatic alert system notifying users of budget threshold breaches, overspending, large transactions, and goal milestones via **EmailJS** (browser client-side) and Django SMTP background dispatch. |
+| **🐙 GitHub & Google OAuth Login** | One-click single sign-on with **GitHub OAuth** and **Google OAuth2** alongside email/password and 6-digit OTP verification. |
 | **🔒 Secure Authentication** | JSON Web Token (JWT) authentication with refresh tokens, password hashing, and Role-Based Access Control (**Student**, **Premium**, **Admin**). |
-| **🎨 Modern Glassmorphic UI** | Premium responsive interface crafted with CSS glassmorphism, fluid animations, dark theme, and mobile-friendly layouts. |
+| **🎨 Modern Glassmorphic UI with Lucide Icons** | Premium responsive interface crafted with CSS glassmorphism, Lucide React icons, dark/light theme switching, badge indicators, and animated progress trackers. |
 
 ---
 
@@ -55,10 +59,11 @@
 
 ### Frontend
 - **Library/Framework**: [React 18](https://react.dev/) (Single Page Application)
-- **Bundler & Dev Server**: [Vite 5](https://vitejs.dev/) with Fast Refresh
-- **Styling**: Vanilla CSS3 Design System with CSS custom properties, glassmorphism, responsive CSS Grid / Flexbox
-- **Icons & UI Elements**: SVG iconography, interactive modal dialogs, status badges, progress bars
-- **HTTP Client**: Native Fetch API with JWT Bearer Token interceptors and automatic token refresh handling
+- **Routing**: [React Router v7](https://reactrouter.com/) with Protected Routes and OAuth callback handling
+- **Bundler & Dev Server**: [Vite 5](https://vitejs.dev/) with Fast Refresh & production optimization
+- **Email Notifications**: [@emailjs/browser](https://www.emailjs.com/) for direct client-side email dispatch
+- **Icons & UI Elements**: [Lucide React](https://lucide.dev/), CSS custom properties design system, dark/light themes
+- **HTTP Client**: Axios with JWT Bearer Token interceptors, cross-origin persistence, and automatic token refresh handling
 
 ### Backend
 - **Framework**: [Django 5.x](https://www.djangoproject.com/) & [Django REST Framework (DRF)](https://www.django-rest-framework.org/)
@@ -154,8 +159,46 @@ erDiagram
 ```
 
 ### Switching between Databases:
-- **SQLite (Default)**: If `DB_NAME` is left empty in `budgetbuddy_backend/.env`, Django automatically uses `db.sqlite3`.
-- **PostgreSQL**: Set `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` in `budgetbuddy_backend/.env` to connect directly to PostgreSQL.
+- **SQLite (Default for Instant Local Dev)**: If `DATABASE_URL` is left empty in `budgetbuddy_backend/.env`, Django automatically uses local `db.sqlite3`.
+- **Supabase (Managed PostgreSQL)**: Set `DATABASE_URL` in `budgetbuddy_backend/.env` with your Supabase connection string:
+  ```env
+  DATABASE_URL=postgresql://postgres.[PROJECT-REF]:[YOUR-PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require
+  ```
+  Then verify connectivity and migrate:
+  ```bash
+  python manage.py check_db
+  python manage.py migrate
+  ```
+- **Standard PostgreSQL**: Provide standard `DATABASE_URL=postgresql://user:password@localhost:5432/budgetbuddy` or discrete `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT`.
+
+---
+
+## 📧 Email Authentication & Notifications
+
+BudgetBuddy supports a comprehensive dual-layer notification architecture:
+
+### 1. Email Authentication & Account Security
+- **Welcome Onboarding Email**: Dispatched automatically upon user registration with starter pocket money tips and default budget allocation.
+- **6-Digit Verification Code (OTP)**: Send verification codes to user emails (`POST /api/auth/send-verification-otp/`), verified via `POST /api/auth/verify-email-otp/` with 10-minute expiry.
+- **Self-Service Password Reset (OTP)**: "Forgot password?" flow on login screen sends a 6-digit OTP to user's email; submitting OTP and new password updates credentials securely.
+
+### 2. Dual-Layer Real-Time Notifications
+- **Layer A: Backend SMTP Delivery (Server-Side)**:
+  - Supports Development Console (`console.EmailBackend` — prints emails to terminal without API keys), Gmail SMTP with App Passwords, SendGrid, or Brevo.
+  - Automatically sends:
+    - ⚠️ Budget Warning Emails (at 80% category budget threshold).
+    - 🚨 Overspending Exceeded Emails (over 100% budget limit).
+    - 💳 Large Transaction Alerts (when an individual expense exceeds configured threshold, e.g. ₹5,000).
+    - 🎯 Savings Goal Milestone Alerts (at 25%, 50%, 75%, and 100% target progress).
+- **Layer B: Client-Side EmailJS Delivery (Browser)**:
+  - Integrates `@emailjs/browser` directly in the frontend for client-side notifications without requiring backend SMTP access.
+  - Configurable via `frontend/.env`:
+    ```env
+    VITE_EMAILJS_SERVICE_ID=your_service_id
+    VITE_EMAILJS_TEMPLATE_ID=your_template_id
+    VITE_EMAILJS_PUBLIC_KEY=your_public_key
+    ```
+  - Settings Tab includes 1-click test buttons for both **Backend SMTP** and **EmailJS**.
 
 ---
 
@@ -163,31 +206,31 @@ erDiagram
 
 ```text
 budgetbuddy/
-|-- budgetbuddy_backend/         # Django REST Framework API
-|   |-- config/                  # Django project root settings, URLs, WSGI/ASGI
-|   |-- finance/                 # Incomes, Expenses, Budgets, Goals, Analytics
-|   |   `-- management/commands/ # seed_data.py command
-|   |-- notifications/           # In-app notifications & alert models/views
-|   |-- reports/                 # Financial reports, CSV/Excel/PDF export views
-|   |-- users/                   # Custom User model, Profile, JWT auth views
-|   |-- manage.py                # Django CLI utility
-|   |-- requirements.txt         # Python backend dependencies
-|   `-- .env.example             # Backend environment template
-|-- frontend/                    # React 18 + Vite Web Application
-|   |-- src/
-|   |   |-- components/          # Dashboard, Transactions, Budgets, Goals, Analytics, Reports, Settings
-|   |   |-- App.jsx              # Main app shell & routing
-|   |   |-- api.js               # Centralized API service with JWT authentication
-|   |   |-- main.jsx             # React DOM entry point
-|   |   `-- styles.css           # Glassmorphism design system & responsive styling
-|   |-- index.html               # Frontend HTML root template
-|   |-- package.json             # NPM dependencies & scripts
-|   |-- vite.config.js           # Vite dev server configuration
-|   `-- .env.example             # Frontend environment template
-|-- start_dev.bat                # 1-Click launcher for Windows Command Prompt
-|-- start_dev.ps1                # 1-Click launcher for Windows PowerShell
-|-- .gitignore                   # Monorepo git exclusion rules
-`-- README.md                    # Project documentation
+├── budgetbuddy_backend/         # Django REST Framework API
+│   ├── config/                  # Django project root settings, URLs, WSGI/ASGI
+│   ├── finance/                 # Incomes, Expenses, Budgets, Goals, Analytics
+│   │   └── management/commands/ # seed_data.py command
+│   ├── notifications/           # In-app notifications & alert models/views
+│   ├── reports/                 # Financial reports, CSV/Excel/PDF export views
+│   ├── users/                   # Custom User model, Profile, JWT auth views
+│   ├── manage.py                # Django CLI utility
+│   ├── requirements.txt         # Python backend dependencies
+│   └── .env.example             # Backend environment template
+├── frontend/                    # React 18 + Vite Web Application
+│   ├── src/
+│   │   ├── components/          # Dashboard, Transactions, Budgets, Goals, Analytics, Reports, Settings
+│   │   ├── App.jsx              # Main app shell & routing
+│   │   ├── api.js               # Centralized API service with JWT authentication
+│   │   ├── main.jsx             # React DOM entry point
+│   │   └── styles.css           # Glassmorphism design system & responsive styling
+│   ├── index.html               # Frontend HTML root template
+│   ├── package.json             # NPM dependencies & scripts
+│   ├── vite.config.js           # Vite dev server configuration
+│   └── .env.example             # Frontend environment template
+├── start_dev.bat                # 1-Click launcher for Windows Command Prompt
+├── start_dev.ps1                # 1-Click launcher for Windows PowerShell
+├── .gitignore                   # Monorepo git exclusion rules
+└── README.md                    # Project documentation
 ```
 
 ---
@@ -357,6 +400,13 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 
 # CORS Allowed Origins (Comma separated)
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173
+AUTH_COOKIE_SECURE=False
+
+# OAuth server-side code exchange
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
 
 # Database (Leave DB_NAME empty to use default SQLite)
 DB_NAME=
@@ -365,6 +415,12 @@ DB_PASSWORD=
 DB_HOST=localhost
 DB_PORT=5432
 ```
+
+Authentication uses 15-minute access JWTs and rotating, blacklisted 7-day
+refresh JWTs in an HttpOnly, SameSite=Lax cookie. Configure the Google and
+GitHub OAuth apps with the exact redirect URI used by the client; GitHub
+accounts must expose at least one verified email (the verified primary email
+is preferred).
 
 ### Frontend (`frontend/.env`)
 ```ini

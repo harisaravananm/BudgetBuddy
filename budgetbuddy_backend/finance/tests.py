@@ -8,9 +8,7 @@ from .models import Budget, Category, Expense, Income, SavingsGoal
 class FinanceAPITests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(email="test@bb.com", password="PassWord123!")
-        token_resp = self.client.post("/api/auth/login/", {"email": "test@bb.com", "password": "PassWord123!"})
-        self.token = token_resp.data["access"]
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token}")
+        self.client.force_authenticate(user=self.user)
 
     def test_income_crud(self):
         # Create

@@ -4,13 +4,22 @@ from .models import Profile, User
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, validators=[validate_password])
+    password = serializers.CharField(write_only=True, min_length=8, validators=[validate_password])
     full_name = serializers.CharField(required=False, allow_blank=True, write_only=True)
     role = serializers.ChoiceField(choices=User.Role.choices, default=User.Role.STUDENT, required=False)
 
     class Meta:
         model = User
         fields = ("id", "email", "password", "full_name", "role")
+
+    def validate_email(self, value):
+        email = value.strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError("An account with this email already exists.")
+        return email
+
+    def validate_full_name(self, value):
+        return value.strip()
 
     def create(self, validated_data):
         full_name = validated_data.pop("full_name", "")
@@ -31,6 +40,11 @@ class ProfileSerializer(serializers.ModelSerializer):
             "currency",
             "savings_target_percent",
             "notifications_enabled",
+            "alert_threshold_percent",
+            "email_notifications_enabled",
+            "large_expense_alert_enabled",
+            "large_expense_threshold",
+            "alert_preferences",
         )
 
 
@@ -39,8 +53,8 @@ class MeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "email", "role", "profile")
-        read_only_fields = ("id", "email")
+        fields = ("id", "email", "role", "auth_provider", "avatar_url", "is_email_verified", "profile")
+        read_only_fields = ("id", "email", "is_email_verified")
 
     def update(self, instance, validated_data):
         if "role" in validated_data and validated_data["role"]:
