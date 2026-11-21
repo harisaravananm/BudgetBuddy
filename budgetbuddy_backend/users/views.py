@@ -144,7 +144,11 @@ class RegisterView(generics.CreateAPIView):
         except Exception:
             pass
         refresh = RefreshToken.for_user(user)
-        response.data = {"access": str(refresh.access_token), "user": MeSerializer(user).data}
+        response.data = {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": MeSerializer(user).data,
+        }
         _set_refresh_cookie(response, str(refresh))
         return response
 
@@ -163,7 +167,10 @@ class LoginView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         refresh = serializer.validated_data["refresh"]
-        response = Response({"access": serializer.validated_data["access"]})
+        response = Response({
+            "access": serializer.validated_data["access"],
+            "refresh": refresh,
+        })
         _set_refresh_cookie(response, refresh)
         return response
 
@@ -179,8 +186,10 @@ class RefreshView(TokenRefreshView):
             data["refresh"] = request.COOKIES.get(REFRESH_COOKIE)
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        response_data = {"access": serializer.validated_data["access"]}
         replacement = serializer.validated_data.get("refresh")
+        response_data = {"access": serializer.validated_data["access"]}
+        if replacement:
+            response_data["refresh"] = replacement
         response = Response(response_data)
         if replacement:
             _set_refresh_cookie(response, replacement)

@@ -46,11 +46,12 @@ class AuthTests(APITestCase):
     def test_refresh(self):
         self.register()
         response = self.login()
-        self.assertNotIn("refresh", response.data)
-        self.assertEqual(
-            self.client.post("/api/auth/refresh/").status_code,
-            200,
-        )
+        self.assertIn("refresh", response.data)
+        self.assertIn("access", response.data)
+        # Can also refresh via body
+        r2 = self.client.post("/api/auth/refresh/", {"refresh": response.data["refresh"]})
+        self.assertEqual(r2.status_code, 200)
+        self.assertIn("access", r2.data)
 
     def test_weak_password_rejected(self):
         r = self.client.post(REG, {"email": "w@w.com", "password": "123"})
