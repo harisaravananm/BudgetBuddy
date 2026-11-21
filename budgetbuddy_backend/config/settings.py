@@ -161,10 +161,16 @@ CORS_ALLOWED_ORIGINS = sorted(set(
         + [
             "http://localhost:5173",
             "http://127.0.0.1:5173",
+            "https://budget-buddy-kappa-ten.vercel.app",
         ]
     )
     if origin.strip()
 ))
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+    r"^http://localhost:\d+$",
+    r"^http://127\.0\.0\.1:\d+$",
+]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False
 
