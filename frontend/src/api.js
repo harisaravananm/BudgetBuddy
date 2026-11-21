@@ -1,6 +1,8 @@
 import axios from "axios";
 
-export const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+// In production on Vercel, API calls go through Vercel's rewrite proxy (same origin → no CORS).
+// In development, they go through Vite's dev-server proxy or directly to the backend.
+export const API_URL = import.meta.env.VITE_API_URL || "";
 
 let accessToken = localStorage.getItem("budgetbuddy_access") || null;
 let refreshPromise = null;
@@ -47,13 +49,26 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
-    if (error.response?.status !== 401 || original?._retry || original?.url?.includes("/auth/refresh/")) {
+    // Never attempt token refresh for authentication/login/register endpoints
+    const isAuthEndpoint =
+      original?.url?.includes("/auth/login/") ||
+      original?.url?.includes("/auth/register/") ||
+      original?.url?.includes("/auth/refresh/") ||
+      original?.url?.includes("/auth/password-reset/") ||
+      original?.url?.includes("/auth/google/") ||
+      original?.url?.includes("/auth/github/");
+
+    if (error.response?.status !== 401 || original?._retry || isAuthEndpoint) {
       return Promise.reject(error);
     }
     original._retry = true;
     try {
       const storedRefresh = getRefreshToken();
-      refreshPromise ||= api.post("/api/auth/refresh/", storedRefresh ? { refresh: storedRefresh } : {});
+      if (!storedRefresh) {
+        clearAccessToken();
+        return Promise.reject(error);
+      }
+      refreshPromise ||= api.post("/api/auth/refresh/", { refresh: storedRefresh });
       const response = await refreshPromise;
       refreshPromise = null;
       setAccessToken(response.data.access);
@@ -63,7 +78,9 @@ api.interceptors.response.use(
     } catch (refreshError) {
       refreshPromise = null;
       clearAccessToken();
-      window.location.assign("/login");
+      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+        window.location.assign("/login");
+      }
       return Promise.reject(refreshError);
     }
   },

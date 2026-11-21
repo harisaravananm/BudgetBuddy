@@ -107,11 +107,16 @@ export function AuthView() {
       const responseErrors = err.response?.data;
       if (responseErrors && typeof responseErrors === "object") {
         setFieldErrors(responseErrors);
-        setError(responseErrors.detail || "");
+        const detailMsg =
+          responseErrors.detail ||
+          responseErrors.error ||
+          (Array.isArray(responseErrors.non_field_errors) ? responseErrors.non_field_errors.join(" ") : "") ||
+          (typeof responseErrors === "string" ? responseErrors : "");
+        setError(detailMsg || "Authentication failed. Please verify your credentials.");
       } else if (!err.response) {
         setError("Cannot reach server. Is the backend running?");
       } else {
-        setError(err.message);
+        setError(err.message || "An unexpected error occurred.");
       }
     } finally {
       setBusy(false);
