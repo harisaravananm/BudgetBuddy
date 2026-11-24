@@ -144,7 +144,7 @@ export function AuthView() {
 
     if (!clientId) {
       setError(
-        `${provider === "google" ? "Google" : "GitHub"} OAuth is not configured. Please set VITE_${provider.toUpperCase()}_CLIENT_ID in your environment.`
+        `${provider === "google" ? "Google" : "GitHub"} OAuth client ID is not configured (VITE_${provider.toUpperCase()}_CLIENT_ID). You can sign in immediately using any of the one-click demo accounts below.`
       );
       return;
     }
@@ -445,38 +445,109 @@ export function AuthView() {
         </div>
 
         {/* ONE-CLICK DEMO ACCOUNTS */}
-        {import.meta.env.VITE_DEMO_MODE === "true" && <div className="demo-credentials">
-          <div style={{ fontWeight: "700", color: "#a5b4fc", display: "flex", justifyContent: "space-between" }}>
-            <span>Quick demo access</span>
-            <span style={{ fontSize: "11px", opacity: 0.8 }}>Pre-seeded with real data</span>
+        {import.meta.env.VITE_DEMO_MODE !== "false" && (
+          <div className="demo-credentials" style={{ marginTop: "22px", padding: "16px", borderRadius: "10px", background: "var(--bg-muted)", border: "1px dashed var(--border-hover)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+              <div style={{ fontWeight: "700", color: "var(--primary)", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <span>⚡</span>
+                <span>Demo Accounts (Instant Access)</span>
+              </div>
+              <span style={{ fontSize: "11px", color: "var(--text-muted)", background: "var(--bg-secondary)", padding: "2px 8px", borderRadius: "12px", border: "1px solid var(--border-subtle)" }}>
+                Pre-seeded
+              </span>
+            </div>
+            <p style={{ color: "var(--text-dim)", fontSize: "11.5px", marginBottom: "12px", lineHeight: "1.4" }}>
+              Click below to explore BudgetBuddy with realistic transactions, budgets, and goals:
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {[
+                {
+                  role: "Student",
+                  email: "student@budgetbuddy.local",
+                  pass: "Student123!",
+                  icon: "🎓",
+                  badge: "Student Tier",
+                  badgeColor: "rgba(59, 130, 246, 0.15)",
+                  textColor: "#3b82f6",
+                  desc: "₹25K monthly allowance, cafeteria & metro expenses, savings goals",
+                },
+                {
+                  role: "Premium",
+                  email: "premium@budgetbuddy.local",
+                  pass: "Premium123!",
+                  icon: "💎",
+                  badge: "Premium Tier",
+                  badgeColor: "rgba(168, 85, 247, 0.15)",
+                  textColor: "#a855f7",
+                  desc: "₹65K income, investments, custom threshold alerts & analytics",
+                },
+                {
+                  role: "Admin",
+                  email: "admin@budgetbuddy.local",
+                  pass: "Admin123!",
+                  icon: "🛡️",
+                  badge: "Admin Access",
+                  badgeColor: "rgba(239, 68, 68, 0.15)",
+                  textColor: "#ef4444",
+                  desc: "Full administrative controls, user management & system overview",
+                },
+              ].map((acc) => (
+                <div
+                  key={acc.role}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "9px 12px",
+                    background: "var(--bg-secondary)",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border-subtle)",
+                    gap: "10px",
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+                      <span style={{ fontSize: "14px" }}>{acc.icon}</span>
+                      <strong style={{ fontSize: "13px", color: "var(--text-main)" }}>{acc.role}</strong>
+                      <span style={{ fontSize: "10px", fontWeight: "600", padding: "1px 6px", borderRadius: "4px", background: acc.badgeColor, color: acc.textColor }}>
+                        {acc.badge}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {acc.desc}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="btn btn-outline btn-sm"
+                      style={{ padding: "4px 8px", fontSize: "11px" }}
+                      title="Fill into form"
+                      onClick={() => {
+                        setEmail(acc.email);
+                        setPassword(acc.pass);
+                        setMode("login");
+                      }}
+                    >
+                      Fill
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="btn btn-primary btn-sm"
+                      style={{ padding: "4px 10px", fontSize: "11px", fontWeight: "600" }}
+                      onClick={() => handleDemoLogin(acc.email, acc.pass)}
+                    >
+                      Login
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <p style={{ marginTop: "4px", color: "var(--text-muted)", fontSize: "11px" }}>
-            Click below to instantly log in as any role:
-          </p>
-          <div className="demo-btn-grid">
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={() => handleDemoLogin("student@budgetbuddy.local", "Student123!")}
-            >
-              Student
-            </button>
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={() => handleDemoLogin("premium@budgetbuddy.local", "Premium123!")}
-            >
-              Premium
-            </button>
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={() => handleDemoLogin("admin@budgetbuddy.local", "Admin123!")}
-            >
-              Admin
-            </button>
-          </div>
-        </div>}
+        )}
       </div>
     </div>
   );

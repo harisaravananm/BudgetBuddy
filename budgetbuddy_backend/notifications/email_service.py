@@ -210,6 +210,81 @@ def send_large_expense_email(user, expense):
     return _send_email_async(subject, plain, html, user.email)
 
 
+def send_transaction_email(user, txn_type, item):
+    """Triggered in real-time when any transaction (income or expense) is recorded."""
+    profile = getattr(user, "profile", None)
+    if profile and not getattr(profile, "email_notifications_enabled", True):
+        return None
+
+    name = (profile.full_name if profile and profile.full_name else user.email.split("@")[0]).strip()
+    amount_val = getattr(item, "amount", Decimal("0.00"))
+    amount_str = f"₹{Decimal(str(amount_val)):.2f}"
+    date_str = str(getattr(item, "date", timezone.localdate()))
+    note_str = getattr(item, "note", "") or "No note provided"
+
+    if txn_type == "expense":
+        cat_name = item.get_category_display() if hasattr(item, "get_category_display") else str(getattr(item, "category", "Expense")).title()
+        subject = f"💸 Transaction Recorded: {amount_str} spent on {cat_name}"
+        intro = f"Hello {name}, your expense transaction of <strong>{amount_str}</strong> under <strong>{cat_name}</strong> was recorded successfully."
+        badge_text = "Expense Logged"
+        badge_color = "#ef4444"
+        details = [
+            ("Transaction Type", "Expense (Debit)"),
+            ("Amount", amount_str),
+            ("Category", cat_name),
+            ("Date", date_str),
+            ("Note / Description", note_str),
+            ("Logged At", timezone.localtime().strftime("%B %d, %Y %I:%M %p")),
+        ]
+        plain = (
+            f"BudgetBuddy Transaction Alert\n\n"
+            f"Hello {name},\n"
+            f"A new expense transaction has been recorded:\n"
+            f"- Type: Expense\n"
+            f"- Amount: {amount_str}\n"
+            f"- Category: {cat_name}\n"
+            f"- Date: {date_str}\n"
+            f"- Note: {note_str}\n\n"
+            f"View your updated budget at BudgetBuddy."
+        )
+    else:
+        src_name = item.get_source_display() if hasattr(item, "get_source_display") else str(getattr(item, "source", "Income")).title()
+        subject = f"💰 Transaction Recorded: {amount_str} received from {src_name}"
+        intro = f"Hello {name}, your income transaction of <strong>{amount_str}</strong> from <strong>{src_name}</strong> was recorded successfully."
+        badge_text = "Income Logged"
+        badge_color = "#10b981"
+        details = [
+            ("Transaction Type", "Income (Credit)"),
+            ("Amount", amount_str),
+            ("Source", src_name),
+            ("Date", date_str),
+            ("Note / Description", note_str),
+            ("Logged At", timezone.localtime().strftime("%B %d, %Y %I:%M %p")),
+        ]
+        plain = (
+            f"BudgetBuddy Transaction Alert\n\n"
+            f"Hello {name},\n"
+            f"A new income transaction has been recorded:\n"
+            f"- Type: Income\n"
+            f"- Amount: {amount_str}\n"
+            f"- Source: {src_name}\n"
+            f"- Date: {date_str}\n"
+            f"- Note: {note_str}\n\n"
+            f"View your updated balance at BudgetBuddy."
+        )
+
+    html = _get_base_template(
+        title=f"Transaction Recorded ({'Expense' if txn_type == 'expense' else 'Income'})",
+        badge_text=badge_text,
+        badge_color=badge_color,
+        intro_text=intro,
+        detail_rows=details,
+        action_url=getattr(settings, "FRONTEND_URL", "http://127.0.0.1:5173"),
+        action_label="Open Dashboard",
+    )
+    return _send_email_async(subject, plain, html, user.email)
+
+
 def send_test_email(recipient_email, user=None):
     """Send a real-time verification email to confirm SMTP/SendGrid configuration."""
     backend_name = getattr(settings, "EMAIL_BACKEND", "")

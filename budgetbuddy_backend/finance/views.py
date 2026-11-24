@@ -15,6 +15,7 @@ from notifications.email_service import (
     send_budget_exceeded_email,
     send_large_expense_email,
     send_goal_milestone_email,
+    send_transaction_email,
 )
 from .models import Budget, Category, Expense, GoalContribution, Income, SavingsGoal
 from .serializers import (
@@ -141,6 +142,14 @@ class IncomeViewSet(viewsets.ModelViewSet):
         instance.is_deleted = True
         instance.save(update_fields=["is_deleted", "updated_at"])
 
+    def perform_create(self, serializer):
+        income = serializer.save(user=self.request.user)
+        try:
+            send_transaction_email(self.request.user, "income", income)
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("Failed to dispatch income transaction email: %s", exc)
+
 
 class ExpenseViewSet(viewsets.ModelViewSet):
     serializer_class = ExpenseSerializer
@@ -166,6 +175,11 @@ class ExpenseViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         expense = serializer.save(user=self.request.user)
+        try:
+            send_transaction_email(self.request.user, "expense", expense)
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("Failed to dispatch expense transaction email: %s", exc)
         check_large_expense_alert(self.request.user, expense)
         notify_budget_alerts(self.request.user, expense.date, expense.category)
 

@@ -71,15 +71,18 @@ export default function TransactionModal({
         }
 
         // Trigger real-time EmailJS notification if user opted-in & EmailJS is configured
-        if (type === "expense" && sendEmailNotice && isEmailJSConfigured() && user?.email) {
+        if (sendEmailNotice && isEmailJSConfigured() && user?.email) {
+          const isExp = type === "expense";
           sendEmailJSNotification({
             toEmail: user.email,
             toName: user.profile?.full_name || user.email.split("@")[0],
-            subject: `💳 BudgetBuddy Expense Logged: ₹${amount} in ${category}`,
-            message: `A new expense transaction was logged into your BudgetBuddy account:\n- Amount: ₹${amount}\n- Category: ${category}\n- Date: ${date}${note ? `\n- Note: "${note}"` : ""}`,
-            alertType: "Expense Recorded",
+            subject: isExp
+              ? `💳 BudgetBuddy Expense Logged: ₹${amount} in ${category}`
+              : `💰 BudgetBuddy Income Logged: ₹${amount} from ${source}`,
+            message: `A new ${type} transaction was logged into your BudgetBuddy account:\n- Type: ${isExp ? "Expense" : "Income"}\n- Amount: ₹${amount}\n- ${isExp ? "Category: " + category : "Source: " + source}\n- Date: ${date}${note ? `\n- Note: "${note}"` : ""}`,
+            alertType: isExp ? "Expense Recorded" : "Income Recorded",
             amount,
-            category,
+            category: isExp ? category : source,
           }).catch((emailErr) => {
             console.warn("EmailJS notification dispatch notice:", emailErr);
           });
@@ -228,7 +231,7 @@ export default function TransactionModal({
               />
             </div>
 
-            {!editItem && type === "expense" && (
+            {!editItem && (
               <div
                 style={{
                   display: "flex",

@@ -88,3 +88,32 @@ class FinanceAPITests(APITestCase):
         res = self.client.get("/api/reports/export-pdf/?month=2026-10")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res["Content-Type"], "text/html")
+
+    def test_transaction_creates_and_sends_email(self):
+        from unittest.mock import patch
+        with patch("finance.views.send_transaction_email") as mock_email:
+            res = self.client.post("/api/finance/incomes/", {
+                "source": Income.Source.POCKET_MONEY,
+                "amount": "5000.00",
+                "date": "2026-10-01",
+                "note": "Gift from uncle",
+            })
+            self.assertEqual(res.status_code, 201)
+            mock_email.assert_called_once()
+            args, _ = mock_email.call_args
+            self.assertEqual(args[0], self.user)
+            self.assertEqual(args[1], "income")
+
+        with patch("finance.views.send_transaction_email") as mock_email:
+            res = self.client.post("/api/finance/expenses/", {
+                "category": Category.FOOD,
+                "amount": "250.00",
+                "date": "2026-10-01",
+                "note": "Lunch meal",
+            })
+            self.assertEqual(res.status_code, 201)
+            mock_email.assert_called_once()
+            args, _ = mock_email.call_args
+            self.assertEqual(args[0], self.user)
+            self.assertEqual(args[1], "expense")
+

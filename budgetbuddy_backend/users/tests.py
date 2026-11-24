@@ -1,3 +1,4 @@
+from django.test import override_settings
 from rest_framework.test import APITestCase
 from .models import User
 
@@ -7,7 +8,25 @@ ME = "/api/auth/me/"
 PW = "Str0ng!Pass#99"
 
 
+@override_settings(
+    REST_FRAMEWORK={
+        "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework_simplejwt.authentication.JWTAuthentication",),
+        "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+        "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+        "PAGE_SIZE": 20,
+        "DEFAULT_THROTTLE_CLASSES": (),
+        "DEFAULT_THROTTLE_RATES": {
+            "auth_login": "10000/day",
+            "auth_register": "10000/day",
+            "auth_oauth": "10000/day",
+        },
+    }
+)
 class AuthTests(APITestCase):
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+
     def register(self, email="a@b.com"):
         return self.client.post(REG, {"email": email, "password": PW, "full_name": "Hari"})
 
@@ -102,4 +121,20 @@ class AuthTests(APITestCase):
         # 3. Verify login works with new password
         login_res = self.client.post(LOGIN, {"email": "reset@student.com", "password": new_pw})
         self.assertEqual(login_res.status_code, 200)
+
+    def test_demo_login_autoseeds(self):
+        # Demo user does not exist prior to login
+        User.objects.filter(email="student@budgetbuddy.local").delete()
+        self.assertFalse(User.objects.filter(email="student@budgetbuddy.local").exists())
+        # Attempt demo login
+        login_res = self.client.post(LOGIN, {"email": "student@budgetbuddy.local", "password": "Student123!"})
+        self.assertEqual(login_res.status_code, 200)
+        self.assertIn("access", login_res.data)
+        self.assertTrue(User.objects.filter(email="student@budgetbuddy.local").exists())
+
+    def test_google_oauth_missing_config_returns_error(self):
+        res = self.client.post("/api/auth/google/", {"code": "test_auth_code", "redirect_uri": "http://localhost:5173/auth/callback/google"})
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("Google OAuth", res.data.get("detail", ""))
+
 

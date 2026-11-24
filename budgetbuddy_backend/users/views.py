@@ -164,6 +164,16 @@ class LoginView(generics.GenericAPIView):
     throttle_scope = "auth_login"
 
     def post(self, request, *args, **kwargs):
+        email = (request.data.get("email") or "").strip().lower()
+        if email in {"student@budgetbuddy.local", "premium@budgetbuddy.local", "admin@budgetbuddy.local"}:
+            if not User.objects.filter(email=email).exists():
+                try:
+                    from finance.management.commands.seed_data import Command as SeedCommand
+                    SeedCommand().handle()
+                except Exception as exc:
+                    import logging
+                    logging.getLogger(__name__).warning("Auto-seeding demo users failed: %s", exc)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         refresh = serializer.validated_data["refresh"]
@@ -217,11 +227,34 @@ def _oauth_request(url, method="GET", data=None, headers=None):
     try:
         with urlopen(request, timeout=10) as result:
             return json.loads(result.read().decode())
-    except (HTTPError, URLError, ValueError) as exc:
-        raise ValueError("OAuth provider request failed") from exc
+    except HTTPError as exc:
+        try:
+            err_data = json.loads(exc.read().decode())
+            err_msg = err_data.get("error_description") or err_data.get("error") or str(exc)
+        except Exception:
+            err_msg = str(exc)
+        raise ValueError(f"OAuth request failed: {err_msg}") from exc
+    except (URLError, ValueError) as exc:
+        raise ValueError(f"OAuth provider request failed: {exc}") from exc
 
 
 def _google_identity(code, redirect_uri):
+    # Support Google ID Token directly if received from Google Identity Services
+    if code and code.count(".") == 2 and code.startswith("ey"):
+        identity = _oauth_request(f"https://oauth2.googleapis.com/tokeninfo?id_token={code}")
+        email = identity.get("email")
+        verified = identity.get("email_verified") in (True, "true", "True", 1)
+        if not email or not verified:
+            raise ValueError("Google ID token did not provide a verified email")
+        return email, identity.get("name", ""), identity.get("picture", "")
+
+    if not getattr(settings, "GOOGLE_CLIENT_ID", "") or not getattr(settings, "GOOGLE_CLIENT_SECRET", ""):
+        raise ValueError(
+            "Google OAuth is not configured on the backend server. "
+            "Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in environment variables, "
+            "or use one-click demo login."
+        )
+
     token = _oauth_request(
         "https://oauth2.googleapis.com/token",
         method="POST",
@@ -233,15 +266,26 @@ def _google_identity(code, redirect_uri):
             "grant_type": "authorization_code",
         },
     )
-    if not token.get("access_token"):
+    if not token or "error" in token:
+        err = token.get("error_description", token.get("error", "Google authorization code was rejected")) if token else "Empty response from Google"
+        raise ValueError(f"Google OAuth error: {err}")
+
+    access_token = token.get("access_token")
+    if not access_token and token.get("id_token"):
+        identity = _oauth_request(f"https://oauth2.googleapis.com/tokeninfo?id_token={token['id_token']}")
+    elif access_token:
+        identity = _oauth_request(
+            "https://openidconnect.googleapis.com/v1/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+    else:
         raise ValueError("Google authorization code was rejected")
-    identity = _oauth_request(
-        "https://openidconnect.googleapis.com/v1/userinfo",
-        headers={"Authorization": f"Bearer {token['access_token']}"},
-    )
-    if not identity.get("email") or not identity.get("email_verified", False):
+
+    email = identity.get("email")
+    verified = identity.get("email_verified") in (True, "true", "True", 1)
+    if not email or not verified:
         raise ValueError("Google did not provide a verified email")
-    return identity["email"], identity.get("name", ""), identity.get("picture", "")
+    return email, identity.get("name", ""), identity.get("picture", "")
 
 
 def _github_identity(code, redirect_uri):
@@ -307,16 +351,21 @@ class OAuthExchangeView(APIView):
                 password=secrets.token_urlsafe(32),
                 auth_provider=provider,
                 avatar_url=avatar or "",
+                is_email_verified=True,
             )
             seed_new_user_starter_data(user)
         else:
             user.auth_provider = provider
+            user.is_email_verified = True
             if avatar:
                 user.avatar_url = avatar
-            user.save(update_fields=["auth_provider", "avatar_url"])
-        if name and not user.profile.full_name:
-            user.profile.full_name = name
-            user.profile.save(update_fields=["full_name"])
+            user.save(update_fields=["auth_provider", "avatar_url", "is_email_verified"])
+
+        from .models import Profile
+        profile, _ = Profile.objects.get_or_create(user=user)
+        if name and not profile.full_name:
+            profile.full_name = name
+            profile.save(update_fields=["full_name"])
 
         refresh = RefreshToken.for_user(user)
         response = Response({
