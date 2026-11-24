@@ -183,7 +183,7 @@ export function AuthView() {
             ? "Create Student Account"
             : "Reset Account Password"}
         </h3>
-        <p style={{ fontSize: "13px", color: "var(--text-dim)", marginBottom: "20px" }}>
+        <p style={{ fontSize: "13px", color: "var(--text-dim)", marginBottom: "16px" }}>
           {mode === "login"
             ? "Enter your credentials or test with one-click demo profiles."
             : mode === "register"
@@ -192,6 +192,54 @@ export function AuthView() {
             ? "Enter your email address to receive a secure 6-digit reset code."
             : "Enter the 6-digit OTP code sent to your email and your new password."}
         </p>
+
+        {/* PROMINENT ONE-CLICK DEMO BUTTONS (ALWAYS VISIBLE ABOVE THE FOLD) */}
+        {mode === "login" && (
+          <div style={{ marginBottom: "18px", padding: "12px 14px", background: "var(--bg-muted)", borderRadius: "8px", border: "1.5px dashed var(--primary)", boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--primary)", display: "flex", alignItems: "center", gap: "4px" }}>
+                <span>⚡</span>
+                <span>Instant Demo Sign In:</span>
+              </span>
+              <span style={{ fontSize: "10px", color: "var(--text-muted)", background: "var(--bg-secondary)", padding: "1px 6px", borderRadius: "10px" }}>1-Click</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+              <button
+                type="button"
+                disabled={busy}
+                className="btn btn-primary btn-sm"
+                style={{ fontSize: "12px", fontWeight: "700", padding: "8px 4px", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}
+                onClick={() => handleDemoLogin("student@budgetbuddy.local", "Student123!")}
+                title="Log in as Student (₹25K Allowance)"
+              >
+                <span>🎓</span>
+                <span>Student</span>
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                className="btn btn-outline btn-sm"
+                style={{ fontSize: "12px", fontWeight: "700", padding: "8px 4px", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", borderColor: "rgba(168, 85, 247, 0.4)", color: "#a855f7" }}
+                onClick={() => handleDemoLogin("premium@budgetbuddy.local", "Premium123!")}
+                title="Log in as Premium (₹65K Income)"
+              >
+                <span>💎</span>
+                <span>Premium</span>
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                className="btn btn-outline btn-sm"
+                style={{ fontSize: "12px", fontWeight: "700", padding: "8px 4px", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", borderColor: "rgba(239, 68, 68, 0.4)", color: "#ef4444" }}
+                onClick={() => handleDemoLogin("admin@budgetbuddy.local", "Admin123!")}
+                title="Log in as Admin (Full Control)"
+              >
+                <span>🛡️</span>
+                <span>Admin</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {statusMessage && (
           <div style={{ padding: "10px 14px", background: "rgba(16, 185, 129, 0.12)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: "6px", color: "var(--success)", fontSize: "12px", marginBottom: "14px" }}>
@@ -445,8 +493,7 @@ export function AuthView() {
         </div>
 
         {/* ONE-CLICK DEMO ACCOUNTS */}
-        {import.meta.env.VITE_DEMO_MODE !== "false" && (
-          <div className="demo-credentials" style={{ marginTop: "22px", padding: "16px", borderRadius: "10px", background: "var(--bg-muted)", border: "1px dashed var(--border-hover)" }}>
+        <div className="demo-credentials" style={{ marginTop: "22px", padding: "16px", borderRadius: "10px", background: "var(--bg-muted)", border: "1px dashed var(--border-hover)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
               <div style={{ fontWeight: "700", color: "var(--primary)", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
                 <span>⚡</span>
@@ -547,7 +594,6 @@ export function AuthView() {
               ))}
             </div>
           </div>
-        )}
       </div>
     </div>
   );
