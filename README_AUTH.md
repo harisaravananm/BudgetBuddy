@@ -36,9 +36,9 @@ This guide details how to configure **GitHub OAuth**, **Google OAuth**, and **Em
 1. Open the **[Google Cloud Console](https://console.cloud.google.com/)** and create/select a project.
 2. Go to **APIs & Services > Credentials** and create an **OAuth 2.0 Client ID** of type **Web application**.
 3. Add Authorized Redirect URIs:
+   - `https://budget-buddy-kappa-ten.vercel.app/auth/callback/google`
    - `http://127.0.0.1:5173/auth/callback/google`
    - `http://localhost:5173/auth/callback/google`
-   - Production: `https://your-app.vercel.app/auth/callback/google`
 4. Set credentials:
    - **Backend**: `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
    - **Frontend**: `VITE_GOOGLE_CLIENT_ID`

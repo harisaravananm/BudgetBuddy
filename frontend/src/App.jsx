@@ -139,8 +139,8 @@ export function AuthView() {
   function handleOAuthLogin(provider) {
     setError("");
     const clientId = provider === "google"
-      ? import.meta.env.VITE_GOOGLE_CLIENT_ID
-      : import.meta.env.VITE_GITHUB_CLIENT_ID;
+      ? (import.meta.env.VITE_GOOGLE_CLIENT_ID || import.meta.env.GOOGLE_CLIENT_ID)
+      : (import.meta.env.VITE_GITHUB_CLIENT_ID || import.meta.env.GITHUB_CLIENT_ID);
 
     if (!clientId) {
       setError(
