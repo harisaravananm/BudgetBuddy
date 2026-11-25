@@ -1,10 +1,49 @@
 import emailjs from "@emailjs/browser";
 
+function loadStoredConfig() {
+  try {
+    const raw = localStorage.getItem("budgetbuddy_emailjs_config");
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+const stored = loadStoredConfig();
+
 export const EMAILJS_CONFIG = {
-  serviceId: import.meta.env.VITE_EMAILJS_SERVICE_ID || "",
-  templateId: import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "",
-  publicKey: import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "",
+  serviceId: import.meta.env.VITE_EMAILJS_SERVICE_ID || stored.serviceId || "",
+  templateId: import.meta.env.VITE_EMAILJS_TEMPLATE_ID || stored.templateId || "",
+  publicKey: import.meta.env.VITE_EMAILJS_PUBLIC_KEY || stored.publicKey || "",
 };
+
+export function setEmailJSConfig({ serviceId, templateId, publicKey }) {
+  if (serviceId) EMAILJS_CONFIG.serviceId = serviceId;
+  if (templateId) EMAILJS_CONFIG.templateId = templateId;
+  if (publicKey) EMAILJS_CONFIG.publicKey = publicKey;
+  try {
+    localStorage.setItem("budgetbuddy_emailjs_config", JSON.stringify(EMAILJS_CONFIG));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+export async function syncEmailJSConfigFromServer(fetchConfigFn) {
+  if (isEmailJSConfigured()) return EMAILJS_CONFIG;
+  try {
+    const data = await fetchConfigFn();
+    if (data && data.service_id && data.template_id && data.public_key) {
+      setEmailJSConfig({
+        serviceId: data.service_id,
+        templateId: data.template_id,
+        publicKey: data.public_key,
+      });
+    }
+  } catch {
+    // ignore if backend endpoint is unavailable
+  }
+  return EMAILJS_CONFIG;
+}
 
 export function isEmailJSConfigured() {
   return Boolean(

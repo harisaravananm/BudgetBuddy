@@ -134,3 +134,13 @@ class NotificationViewSet(viewsets.ModelViewSet):
             message=message,
         )
         return Response(self.get_serializer(notif).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=["get"], url_path="emailjs-config")
+    def emailjs_config(self, request):
+        """Return public EmailJS credentials if configured in server environment variables."""
+        import os
+        return Response({
+            "service_id": os.getenv("VITE_EMAILJS_SERVICE_ID") or os.getenv("EMAILJS_SERVICE_ID") or "",
+            "template_id": os.getenv("VITE_EMAILJS_TEMPLATE_ID") or os.getenv("EMAILJS_TEMPLATE_ID") or "",
+            "public_key": os.getenv("VITE_EMAILJS_PUBLIC_KEY") or os.getenv("EMAILJS_PUBLIC_KEY") or "",
+        })

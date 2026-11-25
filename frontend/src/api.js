@@ -183,6 +183,7 @@ export const notificationsApi = {
   getSettings: () => apiRequest("/api/notifications/settings/"),
   updateSettings: (data) => apiRequest("/api/notifications/settings/", { method: "PATCH", body: data }),
   sendTestEmail: (email = "") => apiRequest("/api/notifications/send-test-email/", { method: "POST", body: { email } }),
+  getEmailJSConfig: () => apiRequest("/api/notifications/emailjs-config/"),
 };
 
 export const reportsApi = {

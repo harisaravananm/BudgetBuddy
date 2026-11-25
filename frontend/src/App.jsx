@@ -652,6 +652,9 @@ export default function App() {
   useEffect(() => {
     if (profile) {
       fetchAllData();
+      import("./utils/emailjsService").then(({ syncEmailJSConfigFromServer }) => {
+        syncEmailJSConfigFromServer(notificationsApi.getEmailJSConfig);
+      });
     }
   }, [profile, selectedMonth]);
 
