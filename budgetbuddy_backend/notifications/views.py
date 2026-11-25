@@ -89,8 +89,16 @@ class NotificationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"], url_path="send-test-email")
     def trigger_test_email(self, request):
         """Dispatch a real-time SMTP test email to the user's registered or custom email address."""
+        from django.conf import settings
         recipient = request.data.get("email") or request.user.email
-        send_test_email(recipient_email=recipient, user=request.user)
+        backend_name = getattr(settings, "EMAIL_BACKEND", "")
+        try:
+            send_test_email(recipient_email=recipient, user=request.user, sync=True)
+        except Exception as exc:
+            return Response(
+                {"success": False, "error": str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         # Also log in-app notification
         Notification.objects.create(
             user=request.user,
@@ -98,6 +106,14 @@ class NotificationViewSet(viewsets.ModelViewSet):
             title="Real-Time Test Email Dispatched",
             message=f"Verification email was sent to {recipient}.",
         )
+        if "console" in backend_name.lower():
+            return Response({
+                "success": True,
+                "message": (
+                    f"Logged to server console for {recipient} (EMAIL_HOST_USER is not set on the server, "
+                    "so real SMTP delivery is inactive)."
+                ),
+            })
         return Response({
             "success": True,
             "message": f"Real-time test email successfully dispatched to {recipient}.",

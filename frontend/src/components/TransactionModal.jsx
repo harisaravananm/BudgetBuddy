@@ -248,12 +248,12 @@ export default function TransactionModal({
                   <span style={{ fontSize: "16px" }}>✉️</span>
                   <div>
                     <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-main)" }}>
-                      EmailJS Notification
+                      Email Notification
                     </div>
                     <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                       {isEmailJSConfigured()
                         ? `Send instant alert to ${user?.email || "your registered email"}`
-                        : "EmailJS not active in .env (optional setup)"}
+                        : `Backend alert queued for ${user?.email || "your registered email"}`}
                     </div>
                   </div>
                 </div>
@@ -265,7 +265,7 @@ export default function TransactionModal({
                     style={{ cursor: "pointer", width: "16px", height: "16px" }}
                   />
                 ) : (
-                  <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>Inactive</span>
+                  <span style={{ fontSize: "11px", color: "var(--primary)", fontWeight: "600" }}>Server Auto</span>
                 )}
               </div>
             )}

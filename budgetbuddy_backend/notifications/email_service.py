@@ -8,22 +8,44 @@ from django.utils import timezone
 logger = logging.getLogger("notifications.email")
 
 
+def _send_email_sync(subject, plain_text, html_content, recipient_email):
+    """Deliver an email synchronously and return True on success or raise on failure."""
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "BudgetBuddy <noreply@budgetbuddy.local>")
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=plain_text,
+        from_email=from_email,
+        to=[recipient_email],
+    )
+    msg.attach_alternative(html_content, "text/html")
+    msg.send(fail_silently=False)
+    logger.info("Real-time email sent successfully to %s: '%s'", recipient_email, subject)
+    return True
+
+
 def _send_email_async(subject, plain_text, html_content, recipient_email):
     """Deliver an email in a background thread to prevent blocking HTTP requests."""
     def task():
         try:
-            from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "BudgetBuddy <noreply@budgetbuddy.local>")
-            msg = EmailMultiAlternatives(
-                subject=subject,
-                body=plain_text,
-                from_email=from_email,
-                to=[recipient_email],
-            )
-            msg.attach_alternative(html_content, "text/html")
-            msg.send(fail_silently=False)
-            logger.info("Real-time email sent successfully to %s: '%s'", recipient_email, subject)
+            _send_email_sync(subject, plain_text, html_content, recipient_email)
         except Exception as exc:
             logger.error("Failed to send real-time email to %s: %s", recipient_email, exc)
+            try:
+                from notifications.models import Notification
+                from users.models import User
+                user = User.objects.filter(email=recipient_email).first()
+                if user:
+                    Notification.objects.create(
+                        user=user,
+                        type=Notification.Type.SYSTEM,
+                        title="Email Delivery Notice",
+                        message=(
+                            f"Could not deliver email to {recipient_email}: {exc}. "
+                            "Ensure SMTP credentials (EMAIL_HOST_USER, EMAIL_HOST_PASSWORD) are configured on the server."
+                        ),
+                    )
+            except Exception:
+                pass
 
     thread = threading.Thread(target=task, daemon=True)
     thread.start()
@@ -282,10 +304,29 @@ def send_transaction_email(user, txn_type, item):
         action_url=getattr(settings, "FRONTEND_URL", "http://127.0.0.1:5173"),
         action_label="Open Dashboard",
     )
+
+    try:
+        from notifications.models import Notification
+        label = cat_name if txn_type == "expense" else src_name
+        Notification.objects.create(
+            user=user,
+            type=Notification.Type.EMAIL_SENT,
+            title=f"Transaction Alert: {amount_str} ({'Expense' if txn_type == 'expense' else 'Income'})",
+            message=f"{'Spent' if txn_type == 'expense' else 'Received'} {amount_str} ({label}) on {date_str}.",
+            related_object=f"{txn_type}:{getattr(item, 'id', '')}",
+        )
+    except Exception as exc:
+        logger.warning("Failed to create in-app transaction notification: %s", exc)
+
+    backend_name = getattr(settings, "EMAIL_BACKEND", "")
+    if user.email.endswith(".local") and "smtp" in backend_name.lower():
+        logger.info("Skipping external SMTP dispatch for demo .local address %s", user.email)
+        return None
+
     return _send_email_async(subject, plain, html, user.email)
 
 
-def send_test_email(recipient_email, user=None):
+def send_test_email(recipient_email, user=None, sync=False):
     """Send a real-time verification email to confirm SMTP/SendGrid configuration."""
     backend_name = getattr(settings, "EMAIL_BACKEND", "")
     host = getattr(settings, "EMAIL_HOST", "localhost")
@@ -320,6 +361,8 @@ def send_test_email(recipient_email, user=None):
         action_url=getattr(settings, "FRONTEND_URL", "http://127.0.0.1:5173"),
         action_label="Open Dashboard",
     )
+    if sync:
+        return _send_email_sync(subject, plain, html, recipient_email)
     return _send_email_async(subject, plain, html, recipient_email)
 
 
